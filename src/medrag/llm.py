@@ -58,9 +58,20 @@ class EvrenLLM:
         }
         data = self._post(payload)
         try:
-            return data["choices"][0]["message"]["content"].strip()
-        except (KeyError, IndexError, TypeError) as e:
+            choice = data["choices"][0]
+            content = choice["message"].get("content")
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
             raise LLMError(f"Beklenmeyen LLM cevabı: {str(data)[:200]}") from e
+        if not content or not content.strip():
+            # Düşünen modellerde token sınırı iç düşünmeye harcanırsa içerik boş gelebilir.
+            raise LLMError(f"LLM boş cevap verdi (finish_reason={choice.get('finish_reason')})")
+        return content.strip()
+
+    def raw(self, messages: list[dict], max_tokens: int) -> dict:
+        """Teşhis için ham cevabı döner."""
+        return self._post(
+            {"model": self.model, "messages": messages, "temperature": 0.3, "max_tokens": max_tokens}
+        )
 
     def stream(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 1024) -> Iterator[str]:
         """Cevabı parça parça (SSE) verir."""

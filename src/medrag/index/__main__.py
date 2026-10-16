@@ -38,6 +38,34 @@ def check_api(settings, chunks: list[dict]) -> None:
         print(f"{count} paralel x {size}: {took:.1f}s, {len(texts) / took:.1f} metin/sn, şekil={vecs.shape}", flush=True)
 
 
+def check_chat(settings) -> None:
+    """Sohbet uç noktasının cevap yapısını yazdırır (içerik metni değil, alanlar ve uzunluklar)."""
+    import time
+
+    from medrag.llm import EvrenLLM
+
+    llm = EvrenLLM(settings.llm_api_url, settings.llm_model)
+    msgs = [{"role": "user", "content": "Tek cümleyle yanıtla: grip nedir?"}]
+    for max_tokens in (120, 600, 2000):
+        start = time.time()
+        try:
+            data = llm.raw(msgs, max_tokens)
+        except Exception as e:  # noqa: BLE001 - teşhis aracı
+            print(f"max_tokens={max_tokens}: HATA {type(e).__name__}: {e}", flush=True)
+            continue
+        choice = data["choices"][0]
+        message = choice["message"]
+        fields = {k: (len(v) if isinstance(v, str) else type(v).__name__) for k, v in message.items()}
+        print(
+            f"max_tokens={max_tokens}: {time.time() - start:.1f}s model={data.get('model')} "
+            f"finish={choice.get('finish_reason')} usage={data.get('usage')} alanlar={fields}",
+            flush=True,
+        )
+        content = message.get("content")
+        if content:
+            print("  örnek cevap:", content[:150].replace("\n", " "), flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m medrag.index")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -53,6 +81,7 @@ def main() -> None:
     chunks = load_chunks(settings.data_dir)
 
     if args.cmd == "check":
+        check_chat(settings)
         check_api(settings, chunks)
         return
 
