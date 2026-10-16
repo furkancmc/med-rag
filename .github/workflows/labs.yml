@@ -1,0 +1,38 @@
+name: labs
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: "sanity (API'siz), raw (ham çıktılar) veya ocr (doğruluk ölçümü)"
+        default: sanity
+        type: choice
+        options: [sanity, raw, ocr]
+
+jobs:
+  labs:
+    runs-on: ubuntu-latest
+    env:
+      EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pillow
+      - run: sudo apt-get install -y fonts-dejavu-core
+      - name: Sanity
+        if: inputs.step == 'sanity'
+        run: python -m medrag.eval labs-sanity
+      - name: Ham çıktılar
+        if: inputs.step == 'raw'
+        run: python -m medrag.eval labs-raw
+      - name: OCR doğruluğu
+        if: inputs.step == 'ocr'
+        run: python -m medrag.eval labs-ocr
+      - uses: actions/upload-artifact@v4
+        if: inputs.step == 'ocr'
+        with:
+          name: labs-results
+          path: eval/labs_results.md

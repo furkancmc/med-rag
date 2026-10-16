@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     assess_sources_k: int = 4
 
     # --- Tahlil ve görsel okuma (iş akışı E) ---
+    labs_explain_model: str = "deepseek-v4.1-flash"
+    vision_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
+    vision_ocr_models: str = "deepseek-ocr-2,dots-ocr"  # sırayla denenir; virgülle ayrılmış
+    vision_chat_model: str = "qwen3-vl-30b"
+    vision_extract_model: str = "deepseek-v4.1-flash"
+    vision_max_bytes: int = 8 * 1024 * 1024
 
     # --- Sunucu (iş akışı F) ---
 

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tahlil Yorumu</title>
+<link rel="stylesheet" href="/static/base.css">
+<style>
+  .tabs { display: flex; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: 12px; }
+  .tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .lab-row { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 8px; background: var(--surface); }
+  .lab-row .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .lab-row .name { font-weight: 600; overflow-wrap: anywhere; }
+  .lab-row .inputs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .lab-row details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  .lab-row details .inputs { margin-top: 6px; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .preview { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--line); object-fit: contain; }
+  .res { width: 100%; border-collapse: collapse; }
+  .res td { padding: 10px 4px; border-top: 1px solid var(--line); vertical-align: top; }
+  .res tr:first-child td { border-top: 0; }
+  .res .n { font-weight: 600; overflow-wrap: anywhere; }
+  .res .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
+  .res .v { white-space: nowrap; text-align: right; }
+  .inline-note { font-size: 13px; color: var(--muted); }
+  .link-btn { text-decoration: none; display: inline-flex; align-items: center; }
+  a.link-btn:visited { color: var(--accent-text); }
+  input[type="file"] { max-width: 100%; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>Tahlil Yorumu</h1>
+    <p>Sonuçlarınızı girin ya da fotoğrafını çekin; değerler referans aralığıyla karşılaştırılır.</p>
+  </header>
+  <main class="app-main">
+    <div class="container stack">
+
+      <div class="alert alert-info small">
+        Raporunuzdaki referans aralığı her zaman bu sayfadaki aralıklardan önceliklidir; aralıklar
+        laboratuvardan laboratuvara değişir. Bu sayfa tanı koymaz.
+      </div>
+
+      <section class="card stack" aria-label="Değer ekleme">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-manual" aria-selected="true" aria-controls="panel-manual">Değerleri gir</button>
+          <button type="button" role="tab" id="tab-photo" aria-selected="false" aria-controls="panel-photo">Fotoğraftan oku</button>
+        </div>
+
+        <div id="panel-manual" role="tabpanel" aria-labelledby="tab-manual" class="stack">
+          <div class="field">
+            <label class="label" for="picker">Test ara ve ekle</label>
+            <div class="row" style="flex-wrap: nowrap">
+              <input id="picker" class="input" list="test-list" placeholder="örn. Hemoglobin, TSH, LDL" autocomplete="off" style="flex:1; min-width: 0">
+              <button type="button" id="add-test" class="btn btn-primary">Ekle</button>
+            </div>
+            <datalist id="test-list"></datalist>
+            <span class="hint" id="picker-msg" role="status"></span>
+          </div>
+        </div>
+
+        <div id="panel-photo" role="tabpanel" aria-labelledby="tab-photo" class="stack" hidden>
+          <div class="field">
+            <label class="label" for="lab-file">Tahlil sonucu fotoğrafı</label>
+            <input id="lab-file" class="input" type="file" accept="image/*" capture="environment">
+            <span class="hint">Düz, net ve iyi aydınlatılmış bir fotoğraf en iyi sonucu verir. Görsel saklanmaz.</span>
+          </div>
+          <img id="lab-preview" class="preview" alt="Seçilen tahlil fotoğrafı" hidden>
+          <div class="row"><button type="button" id="lab-read" class="btn btn-primary" disabled>Değerleri oku</button>
+            <span id="lab-status" class="inline-note" role="status"></span></div>
+          <div id="lab-warnings" class="stack-sm"></div>
+        </div>
+      </section>
+
+      <section class="card stack" aria-label="Değerleriniz">
+        <h2 class="card-title">Değerleriniz</h2>
+        <div class="grid2">
+          <div class="field"><label class="label" for="sex">Cinsiyet</label>
+            <select id="sex" class="select"><option value="">Belirtmek istemiyorum</option><option value="female">Kadın</option><option value="male">Erkek</option></select></div>
+          <div class="field"><label class="label" for="age">Yaş</label>
+            <input id="age" class="input" type="number" inputmode="numeric" min="0" max="120" placeholder="isteğe bağlı"></div>
+        </div>
+        <div id="rows" class="stack"></div>
+        <p id="rows-empty" class="muted small">Henüz değer eklenmedi.</p>
+        <button type="button" id="interpret" class="btn btn-primary btn-block" disabled>Yorumla</button>
+        <div id="error" class="alert alert-danger" role="alert" hidden></div>
+      </section>
+
+      <section id="out" class="stack" aria-live="polite" hidden>
+        <div id="urgent" class="alert alert-danger" role="alert" hidden></div>
+        <div class="card"><h2 class="card-title">Sonuçlar</h2><table class="res" id="res"></table></div>
+        <div class="card"><h2 class="card-title">Açıklama</h2><div id="explain" class="prose"></div></div>
+        <details class="card sources" id="sources-wrap" hidden><summary>Kaynaklar</summary><ol id="sources"></ol></details>
+        <p class="disclaimer" id="disclaimer"></p>
+      </section>
+
+      <section class="card stack" aria-label="İlaç kutusu tanıma">
+        <h2 class="card-title">İlaç kutusu tanı</h2>
+        <p class="muted small" style="margin:0">İlaç kutusunun fotoğrafından adı ve etken maddeyi okur. Doz önerisi vermez.</p>
+        <input id="med-file" class="input" type="file" accept="image/*" capture="environment" aria-label="İlaç kutusu fotoğrafı">
+        <div class="row"><button type="button" id="med-read" class="btn" disabled>Tanı</button>
+          <span id="med-status" class="inline-note" role="status"></span></div>
+        <div id="med-out" class="stack-sm" hidden></div>
+      </section>
+    </div>
+  </main>
+  <nav id="app-nav"></nav>
+</div>
+<script src="/static/common.js"></script>
+<script>
+(function () {
+  "use strict";
+  const { escapeHtml: esc, renderMarkdown, postJSON } = window.MedRAG;
+  const $ = (id) => document.getElementById(id);
+  const STATUS = { low: "Düşük", high: "Yüksek", normal: "Normal", critical: "Kritik", unknown: "Belirsiz" };
+  let catalog = [];
+  let rowId = 0;
+
+  const IMG_MAX = 8 * 1024 * 1024;
+
+  async function uploadImage(url, file) {
+    if (!file) throw new Error("Önce bir fotoğraf seçin.");
+    if (file.size > IMG_MAX) throw new Error("Görsel 8 MB'tan büyük olamaz.");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(url, { method: "POST", body: fd });
+    let data = null;
+    try { data = await res.json(); } catch (_) { /* boş gövde */ }
+    if (!res.ok) throw new Error((data && (data.detail || data.error)) || "Sunucu hatası (" + res.status + ")");
+    return data;
+  }
+
+  // --- Sekmeler ---
+  function selectTab(which) {
+    for (const k of ["manual", "photo"]) {
+      const on = k === which;
+      $("tab-" + k).setAttribute("aria-selected", on ? "true" : "false");
+      $("panel-" + k).hidden = !on;
+    }
+  }
+  $("tab-manual").addEventListener("click", () => selectTab("manual"));
+  $("tab-photo").addEventListener("click", () => selectTab("photo"));
+  document.querySelector(".tabs").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const next = $("tab-manual").getAttribute("aria-selected") === "true" ? "photo" : "manual";
+      selectTab(next); $("tab-" + next).focus();
+    }
+  });
+
+  // --- Katalog ve test seçici ---
+  function fold(s) {
+    return String(s).toLocaleLowerCase("tr").replace(/ı/g, "i").normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+  }
+  function findTest(q) {
+    const f = fold(q);
+    if (!f) return null;
+    return catalog.find((t) => fold(t.name) === f || t.id === f || t.aliases.some((a) => fold(a) === f))
+      || catalog.find((t) => fold(t.name).includes(f) || t.aliases.some((a) => fold(a).includes(f) && f.length > 2));
+  }
+  async function loadCatalog() {
+    try {
+      const res = await fetch("/api/labs/tests");
+      catalog = (await res.json()).tests || [];
+    } catch (_) { catalog = []; }
+    $("test-list").innerHTML = catalog.map((t) => '<option value="' + esc(t.name) + '"></option>').join("");
+    if (!catalog.length) $("picker-msg").textContent = "Test listesi yüklenemedi; sayfayı yenileyin.";
+  }
+  function addFromPicker() {
+    const t = findTest($("picker").value);
+    if (!t) { $("picker-msg").textContent = "Bu test listede yok. Listeden bir test seçin."; return; }
+    $("picker-msg").textContent = "";
+    addRow({ test_id: t.id });
+    $("picker").value = "";
+  }
+  $("add-test").addEventListener("click", addFromPicker);
+  $("picker").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFromPicker(); } });
+
+  // --- Satırlar ---
+  function addRow(init) {
+    const t = catalog.find((c) => c.id === init.test_id);
+    if (!t) return;
+    const id = "r" + (++rowId);
+    const div = document.createElement("div");
+    div.className = "lab-row";
+    div.dataset.test = t.id;
+    const unit = init.unit && t.units.includes(init.unit) ? init.unit : t.unit;
+    const opts = t.units.map((u) => '<option' + (u === unit ? " selected" : "") + ">" + esc(u) + "</option>").join("");
+    div.innerHTML =
+      '<div class="head"><span class="name">' + esc(t.name) + '</span>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-remove aria-label="' + esc(t.name) + ' satırını kaldır">Kaldır</button></div>' +
+      '<div class="inputs">' +
+      '<div class="field"><label class="label" for="' + id + 'v">Sonuç</label><input id="' + id + 'v" class="input" data-f="value" inputmode="decimal" autocomplete="off" placeholder="örn. 5,4"></div>' +
+      '<div class="field"><label class="label" for="' + id + 'u">Birim</label><select id="' + id + 'u" class="select" data-f="unit">' + opts + "</select></div></div>" +
+      "<details" + (init.ref_low != null || init.ref_high != null ? " open" : "") + "><summary>Raporumdaki referans aralığı (isteğe bağlı)</summary>" +
+      '<div class="inputs"><div class="field"><label class="label" for="' + id + 'l">Alt sınır</label><input id="' + id + 'l" class="input" data-f="ref_low" inputmode="decimal"></div>' +
+      '<div class="field"><label class="label" for="' + id + 'h">Üst sınır</label><input id="' + id + 'h" class="input" data-f="ref_high" inputmode="decimal"></div></div></details>';
+    for (const k of ["value", "ref_low", "ref_high"]) {
+      const v = init[k];
+      if (v != null && v !== "") div.querySelector('[data-f="' + k + '"]').value = String(v).replace(".", ",");
+    }
+    div.querySelector("[data-remove]").addEventListener("click", () => { div.remove(); refresh(); });
+    $("rows").appendChild(div);
+    refresh();
+    div.querySelector('[data-f="value"]').focus({ preventScroll: false });
+  }
+  function refresh() {
+    const n = $("rows").children.length;
+    $("rows-empty").hidden = n > 0;
+    $("interpret").disabled = n === 0;
+  }
+  function collect() {
+    return [...$("rows").children].map((div) => {
+      const g = (f) => div.querySelector('[data-f="' + f + '"]').value.trim();
+      const t = catalog.find((c) => c.id === div.dataset.test);
+      const o = { test: t.name, value: g("value"), unit: g("unit") };
+      if (g("ref_low")) o.ref_low = g("ref_low");
+      if (g("ref_high")) o.ref_high = g("ref_high");
+      return o;
+    });
+  }
+
+  // --- Yorumla ---
+  function showError(msg) {
+    $("error").textContent = msg;
+    $("error").hidden = !msg;
+  }
+  function fmtRange(r) {
+    if (!r) return "";
+    const lo = r.low, hi = r.high, u = r.unit || "";
+    const body = lo != null && hi != null ? lo + " - " + hi : lo != null ? "≥ " + lo : hi != null ? "≤ " + hi : "";
+    return body ? "Aralık: " + body + " " + u + " (" + (r.source || "") + ")" : "";
+  }
+  $("interpret").addEventListener("click", async () => {
+    showError("");
+    const values = collect();
+    const missing = values.findIndex((v) => !v.value);
+    if (missing >= 0) { showError("Lütfen tüm satırlara bir sonuç girin ya da kullanmadığınız satırı kaldırın."); return; }
+    const btn = $("interpret");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Yorumlanıyor…';
+    try {
+      const body = { values };
+      if ($("sex").value) body.sex = $("sex").value;
+      if ($("age").value) body.age = parseInt($("age").value, 10);
+      render(await postJSON("/api/labs/interpret", body));
+    } catch (e) {
+      showError("Yorumlanamadı: " + e.message);
+    } finally {
+      btn.textContent = "Yorumla";
+      refresh();
+    }
+  });
+  function render(d) {
+    $("out").hidden = false;
+    const u = $("urgent");
+    u.hidden = !d.urgent;
+    u.textContent = d.urgent ? d.urgent_message : "";
+    $("res").innerHTML = d.results.map((r) => {
+      const val = r.value == null ? "—" : (r.qualifier || "") + r.value + " " + (r.unit || "");
+      const sub = [fmtRange(r.range), r.note].filter(Boolean).map((s) => '<span class="sub">' + esc(s) + "</span>").join("");
+      return '<tr><td class="n">' + esc(r.name) + sub + '</td><td class="v">' + esc(val) + "<br>" +
+        '<span class="badge status-' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + "</span></td></tr>";
+    }).join("");
+    $("explain").innerHTML = renderMarkdown(d.explanation || "");
+    $("sources-wrap").hidden = !d.sources.length;
+    $("sources").innerHTML = d.sources.map((s) =>
+      '<li id="src-' + s.n + '"><a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.title) +
+      (s.section ? " - " + esc(s.section) : "") + "</a> <span>(" + esc(s.source || "") + ")</span></li>").join("");
+    $("disclaimer").textContent = d.disclaimer || "";
+    $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // --- Fotoğraftan okuma ---
+  let previewUrl = null;
+  $("lab-file").addEventListener("change", () => {
+    const f = $("lab-file").files[0];
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = f ? URL.createObjectURL(f) : null;
+    $("lab-preview").hidden = !f;
+    if (f) $("lab-preview").src = previewUrl;
+    $("lab-read").disabled = !f;
+    $("lab-status").textContent = "";
+  });
+  $("lab-read").addEventListener("click", async () => {
+    $("lab-warnings").innerHTML = "";
+    $("lab-status").innerHTML = '<span class="spinner" aria-hidden="true"></span> Okunuyor…';
+    $("lab-read").disabled = true;
+    try {
+      const d = await uploadImage("/api/vision/lab-report", $("lab-file").files[0]);
+      let added = 0;
+      const skipped = [];
+      for (const r of d.rows) {
+        if (r.known && r.test_id) { addRow({ test_id: r.test_id, value: r.value, unit: r.unit, ref_low: r.ref_low, ref_high: r.ref_high }); added++; }
+        else skipped.push(r.test);
+      }
+      $("lab-status").textContent = added ? added + " değer eklendi. Aşağıda kontrol edip düzeltin." : "";
+      const msgs = [...d.warnings];
+      if (skipped.length) msgs.push("Tanınmayan satırlar eklenmedi: " + skipped.join(", "));
+      $("lab-warnings").innerHTML = msgs.map((m) => '<div class="alert alert-warn small">' + esc(m) + "</div>").join("");
+      if (added) $("rows").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      $("lab-status").textContent = "";
+      $("lab-warnings").innerHTML = '<div class="alert alert-danger small">' + esc(e.message) + "</div>";
+    } finally {
+      $("lab-read").disabled = !$("lab-file").files[0];
+    }
+  });
+
+  // --- İlaç kutusu ---
+  $("med-file").addEventListener("change", () => { $("med-read").disabled = !$("med-file").files[0]; });
+  $("med-read").addEventListener("click", async () => {
+    const out = $("med-out");
+    out.hidden = true;
+    $("med-status").innerHTML = '<span class="spinner" aria-hidden="true"></span> Okunuyor…';
+    $("med-read").disabled = true;
+    try {
+      const d = await uploadImage("/api/vision/medicine", $("med-file").files[0]);
+      $("med-status").textContent = "";
+      out.hidden = false;
+      if (!d.readable) {
+        out.innerHTML = '<div class="alert alert-warn small">İlaç adı okunamadı. Daha yakından ve net bir fotoğraf deneyin.</div>';
+      } else {
+        const parts = [["Ad", d.brand_name], ["Etken madde", (d.active_ingredients || []).join(", ")], ["Güç", d.strength], ["Form", d.form]]
+          .filter((p) => p[1]).map((p) => "<div><strong>" + esc(p[0]) + ":</strong> " + esc(p[1]) + "</div>").join("");
+        out.innerHTML = parts +
+          '<div class="small muted">Okuma güveni: ' + esc({ high: "yüksek", medium: "orta", low: "düşük" }[d.confidence] || "düşük") + ". Lütfen kutuyla karşılaştırın.</div>" +
+          '<a class="btn btn-primary link-btn" href="/?q=' + encodeURIComponent(d.suggested_question || "") + '">Sohbette sor</a>';
+      }
+    } catch (e) {
+      $("med-status").textContent = "";
+      out.hidden = false;
+      out.innerHTML = '<div class="alert alert-danger small">' + esc(e.message) + "</div>";
+    } finally {
+      $("med-read").disabled = !$("med-file").files[0];
+    }
+  });
+
+  loadCatalog();
+  refresh();
+})();
+</script>
+</body>
+</html>
