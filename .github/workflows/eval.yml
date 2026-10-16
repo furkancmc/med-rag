@@ -1,0 +1,40 @@
+name: Arama değerlendirmesi
+
+# Evren API ile test soruları üretir (yoksa) ve bm25 / vector / hybrid yöntemlerini karşılaştırır.
+# Sadece elle çalıştırılır. Önce "İndeks oluştur (API)" workflow'u bitmiş olmalı.
+on:
+  workflow_dispatch:
+    inputs:
+      regenerate:
+        description: "Soruları yeniden üret"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python -m medrag.ingest build
+      - name: Soruları üret
+        if: ${{ inputs.regenerate || hashFiles('eval/queries.jsonl') == '' }}
+        run: python -m medrag.eval gen --n 150
+      - run: python -m medrag.eval run
+      - name: Sonuçları commit'le
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add eval/queries.jsonl eval/results.md
+          git commit -m "Arama değerlendirme sonuçları" || exit 0
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

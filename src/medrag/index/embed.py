@@ -80,3 +80,21 @@ class ApiEmbedder:
 
     def encode_queries(self, texts: list[str]) -> np.ndarray:
         return self._encode([f"Instruct: {QUERY_TASK}\nQuery:{t}" for t in texts])
+
+
+class CachingEmbedder:
+    """Aynı sorgu birden fazla yöntemde aranırken API'ye tekrar gitmesin."""
+
+    def __init__(self, inner: Embedder):
+        self.inner = inner
+        self._cache: dict[str, np.ndarray] = {}
+
+    def encode_passages(self, texts: list[str]) -> np.ndarray:
+        return self.inner.encode_passages(texts)
+
+    def encode_queries(self, texts: list[str]) -> np.ndarray:
+        missing = [t for t in dict.fromkeys(texts) if t not in self._cache]
+        if missing:
+            for t, v in zip(missing, self.inner.encode_queries(missing), strict=True):
+                self._cache[t] = v
+        return np.stack([self._cache[t] for t in texts])
