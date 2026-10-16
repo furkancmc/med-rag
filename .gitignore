@@ -7,3 +7,6 @@ __pycache__/
 *.egg-info/
 data/*
 !data/.gitkeep
+
+# Claude Code çalışma kopyaları (paralel ajanlar)
+.claude/
