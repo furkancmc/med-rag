@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     multiquery_original_weight: float = 1.0  # RRF'de orijinal sorgunun ağırlığı
 
     # --- Veri (iş akışı B) ---
+    embed_batch_size: int = 64  # istek başına metin
+    index_max_float16_mb: int = 40  # float16 bunu aşacaksa int8 sakla
+    europepmc_per_topic: int = 3  # Europe PMC: konu başına makale
 
     # --- Sohbet ve güvenlik (iş akışı C) ---
     llm_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"

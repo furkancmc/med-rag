@@ -33,6 +33,8 @@ def test_build_in_batches_keeps_order():
 def test_roundtrip_and_mismatch(tmp_path):
     vecs = build_vectors(CHUNKS, FakeEmbedder())
     save_vectors(tmp_path, [c["id"] for c in CHUNKS], vecs)
-    assert np.allclose(load_vectors(tmp_path, CHUNKS), vecs, atol=0.1)
+    loaded = load_vectors(tmp_path, CHUNKS)
+    assert np.allclose(np.linalg.norm(loaded, axis=1), 1.0, atol=1e-3)  # L2-normalize döner
+    assert np.allclose(loaded, vecs / np.linalg.norm(vecs, axis=1, keepdims=True), atol=1e-2)
     with pytest.raises(ValueError):
         load_vectors(tmp_path, CHUNKS[:1])

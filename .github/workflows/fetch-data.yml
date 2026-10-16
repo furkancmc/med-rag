@@ -1,9 +1,22 @@
 name: Veri çek
 
-# MedlinePlus ve Vikipedi verisini indirip data/raw altına commit'ler.
-# Elle (Actions sekmesi) çalıştırılabilir; bu dosya değişince de bir kez çalışır.
+# Tüm kaynakları (MedlinePlus, Vikipedi tr/en, Europe PMC, openFDA, NIH ODS) indirip data/raw altına
+# commit'ler, ardından chunks.jsonl üretir. Her pazar sabaha karşı (UTC) otomatik çalışır; elle de
+# çalıştırılabilir. Bir kaynağın hatası diğerlerini durdurmaz; sonda özet yazdırılır.
 on:
   workflow_dispatch:
+    inputs:
+      sources:
+        description: "Virgülle kaynaklar (all, medlineplus, wikipedia-tr, wikipedia-en, europepmc, openfda, nihods)"
+        default: "all"
+      limit:
+        description: "Kaynak başına öğe sınırı (deneme için; boş = sınırsız)"
+        default: ""
+      per_topic:
+        description: "Europe PMC: konu başına makale"
+        default: "3"
+  schedule:
+    - cron: "17 3 * * 0" # pazar 03:17 UTC
   push:
     branches: [ccr-fc8175dc-sqyb1k]
     paths: [.github/workflows/fetch-data.yml]
@@ -11,27 +24,49 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: fetch-data
+  cancel-in-progress: false
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - run: python -m medrag.ingest medlineplus
-      - run: python -m medrag.ingest wikipedia --lang tr --curated
+      - name: Kaynakları indir (paralel; kaynak başına hata yalıtımlı)
+        id: fetch
         continue-on-error: true
-      - run: python -m medrag.ingest wikipedia --lang en --curated
-        continue-on-error: true
-      - run: python -m medrag.ingest build
+        env:
+          PYTHONUNBUFFERED: "1"
+          OPENFDA_API_KEY: ${{ secrets.OPENFDA_API_KEY }}
+          SOURCES: ${{ github.event.inputs.sources || 'all' }}
+          LIMIT: ${{ github.event.inputs.limit }}
+          PER_TOPIC: ${{ github.event.inputs.per_topic || '3' }}
+        run: |
+          args=(--sources "$SOURCES" --per-topic "$PER_TOPIC")
+          if [ -n "$LIMIT" ]; then args+=(--limit "$LIMIT"); fi
+          python -m medrag.ingest fetch "${args[@]}"
+      - name: Parçala (chunks.jsonl)
         if: ${{ !cancelled() }}
+        run: python -m medrag.ingest build
       - name: Ham veriyi commit'le
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -f data/raw
-          git commit -m "Ham tıbbi veri indirildi (MedlinePlus, Vikipedi)" || exit 0
+          git commit -m "Ham tıbbi veri yenilendi" || exit 0
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Özet
+        if: ${{ !cancelled() }}
+        run: |
+          echo "### Veri çekme" >> "$GITHUB_STEP_SUMMARY"
+          echo "indirme adımı: ${{ steps.fetch.outcome }} (success = tüm kaynaklar tamam)" >> "$GITHUB_STEP_SUMMARY"
+          for f in data/raw/*/*.jsonl; do echo "- $f: $(wc -l < "$f") satır" >> "$GITHUB_STEP_SUMMARY"; done
+          wc -l data/chunks.jsonl >> "$GITHUB_STEP_SUMMARY" || true

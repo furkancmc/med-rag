@@ -6,7 +6,7 @@ from medrag.config import get_settings
 
 from .bm25 import BM25
 from .embed import ApiEmbedder
-from .store import build_vectors, load_chunks, save_vectors
+from .store import embed_incremental, load_chunks, save_vectors
 from .tokenize import tokenize
 
 
@@ -119,6 +119,12 @@ def main() -> None:
     sub = parser.add_subparsers(dest="cmd", required=True)
     embed = sub.add_parser("embed", help="chunk'ları embedding'e çevirip kaydet")
     embed.add_argument("--index-dir", help="varsayılan: <data_dir>/index")
+    embed.add_argument("--full", action="store_true", help="önbelleği yok say, hepsini yeniden hesapla")
+    embed.add_argument(
+        "--trust-legacy",
+        action="store_true",
+        help="özet dosyası olmayan eski indeksi chunk kimliğine güvenerek devral",
+    )
     sub.add_parser("check", help="embedding API'sini birkaç istekle dene, süreleri yazdır")
     search = sub.add_parser("search", help="BM25 ile hızlı deneme araması")
     search.add_argument("query")
@@ -140,16 +146,42 @@ def main() -> None:
         if not api_key:
             raise SystemExit("EVREN_API_KEY ortam değişkeni tanımlı değil")
         embedder = ApiEmbedder(
-            settings.embed_api_url, api_key, settings.embed_api_model, settings.embed_dimensions
+            settings.embed_api_url,
+            api_key,
+            settings.embed_api_model,
+            settings.embed_dimensions,
+            batch_size=settings.embed_batch_size,
+            workers=settings.embed_workers,
         )
         meta = {
             "model": settings.embed_api_model,
             "dimensions": settings.embed_dimensions,
         }
-        vectors = build_vectors(chunks, embedder)
         index_dir = Path(args.index_dir) if args.index_dir else settings.data_dir / "index"
-        save_vectors(index_dir, [c["id"] for c in chunks], vectors, meta)
-        print("kaydedildi:", index_dir, vectors.shape)
+        if args.full:  # önbelleği yok say: boş bir dizinden başla
+            cache_dir = index_dir.with_name(index_dir.name + ".__yok__")
+        else:
+            cache_dir = index_dir
+        batch = settings.embed_batch_size * settings.embed_workers
+        vectors, hashes, stats = embed_incremental(
+            chunks,
+            embedder,
+            cache_dir,
+            settings.embed_api_model,
+            settings.embed_dimensions,
+            batch=batch,
+            trust_legacy=args.trust_legacy,
+        )
+        fmt = save_vectors(
+            index_dir,
+            [c["id"] for c in chunks],
+            vectors,
+            meta,
+            hashes,
+            settings.index_max_float16_mb,
+        )
+        print("embedding özeti:", stats.summary())
+        print("kaydedildi:", index_dir, vectors.shape, fmt)
     else:
         bm25 = BM25([tokenize(c["title"] + " " + c["section"] + " " + c["text"]) for c in chunks])
         for i, score in bm25.search(tokenize(args.query), args.k):
