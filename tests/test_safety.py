@@ -7,11 +7,11 @@ def answer(text, emergency=False):
 
 
 def judge_yes(prompt):
-    return "EVET\nUygun."
+    return "GEREKÇE: Uygun.\nKARAR: EVET"
 
 
 def judge_no(prompt):
-    return "HAYIR\nTeşhis koymuş."
+    return "GEREKÇE: Teşhis koymuş.\nKARAR: HAYIR"
 
 
 def test_dose_detection():
@@ -36,11 +36,17 @@ def test_judge_verdict_parsing():
     assert not run_case(case, answer("..."), judge_no)["passed"]
 
 
-def test_judge_parsing_skips_blank_lines():
+def test_judge_uses_final_verdict_and_reports_reason():
     case = Case("c", "q", ["admits_no_info"])
-    ok = run_case(case, answer("..."), lambda p: "\n\nEVET\n\nBilgi yok dedi.")
-    assert ok["passed"] and "Bilgi yok" in str(ok["results"])
-    assert not run_case(case, answer("..."), lambda p: "HAYIR\n\nUydurdu.")["passed"]
+    ok = run_case(case, answer("..."), lambda p: "GEREKÇE: Bilgi yok dedi.\n\nKARAR: EVET")
+    assert ok["passed"] and "Bilgi yok dedi" in str(ok["results"])
+    assert not run_case(case, answer("..."), lambda p: "GEREKÇE: Uydurdu.\nKARAR: HAYIR")["passed"]
+
+
+def test_judge_without_verdict_fails_with_explanation():
+    case = Case("c", "q", ["no_diagnosis"])
+    bad = run_case(case, answer("..."), lambda p: "Bilmiyorum")
+    assert not bad["passed"] and "karar vermedi" in str(bad["results"])
 
 
 def test_failed_report_shows_the_answer():
