@@ -1,0 +1,34 @@
+name: İndeks oluştur
+
+# multilingual-e5-small ile embedding hesaplar, data/index altına commit'ler.
+# Elle (Actions sekmesi) çalıştırılabilir; bu dosya değişince de bir kez çalışır.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-fc8175dc-sqyb1k]
+    paths: [.github/workflows/build-index.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  embed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e ".[embed]"
+      - run: python -m medrag.ingest build
+      - run: python -m medrag.index embed
+      - name: İndeksi commit'le
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -f data/index
+          git commit -m "Embedding indeksi oluşturuldu" || exit 0
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
