@@ -1,0 +1,7 @@
+.git
+.github
+.venv
+tests
+eval
+**/__pycache__
+data/chunks.jsonl

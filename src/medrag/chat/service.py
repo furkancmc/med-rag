@@ -17,6 +17,7 @@ def source_card(n: int, hit: Hit) -> dict:
         "source": c["source"],
         "license": c["license"],
         "snippet": c["text"][:200],
+        "text": c["text"],
     }
 
 
@@ -58,13 +59,14 @@ class ChatService:
 
     def answer(self, question: str, history: list[dict] | None = None) -> dict:
         """Akışı toplayıp tek cevap olarak döner (test ve değerlendirme için)."""
-        out = {"text": "", "sources": [], "emergency": False}
+        out = {"text": "", "sources": [], "sources_text": "", "emergency": False}
         for ev in self.stream(question, history):
             if ev["type"] == "emergency":
                 out["emergency"] = True
                 out["emergency_text"] = ev["text"]
             elif ev["type"] == "sources":
                 out["sources"] = ev["items"]
+                out["sources_text"] = "\n\n".join(f"[{s['n']}] {s['title']}: {s['text']}" for s in ev["items"])
             elif ev["type"] == "token":
                 out["text"] += ev["text"]
         return out

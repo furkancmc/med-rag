@@ -8,6 +8,7 @@ from .index.bm25 import BM25
 from .index.embed import ApiEmbedder, Embedder
 from .index.store import load_chunks, load_vectors
 from .index.tokenize import tokenize
+from .ingest.build import build_chunks
 
 RRF_K = 60  # sıralama birleştirmede standart sabit
 
@@ -58,6 +59,8 @@ def load_retriever(settings: Settings) -> Retriever:
     api_key = os.environ.get("EVREN_API_KEY")
     if not api_key:
         raise RuntimeError("EVREN_API_KEY ortam değişkeni tanımlı değil")
+    if not (settings.data_dir / "chunks.jsonl").exists():
+        build_chunks(settings.data_dir)  # data/raw'dan deterministik olarak üretilir
     chunks = load_chunks(settings.data_dir)
     vectors = load_vectors(settings.index_dir, chunks)
     embedder = ApiEmbedder(
