@@ -1,0 +1,27 @@
+# Çalıştırma: .env dosyasına EVREN_API_KEY=... yazın (depoya girmez), sonra `docker compose up -d --build`.
+services:
+  medrag:
+    build: .
+    image: medrag
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: "8000"
+      WEB_CONCURRENCY: "1"
+      MEDRAG_WARMUP: "1"
+      # Ters vekil (Caddy/nginx) arkasında çalışıyorsanız açın:
+      # MEDRAG_TRUST_PROXY_HEADERS: "1"
+      # MEDRAG_HSTS: "1"
+      # MEDRAG_ACCESS_CODE: "..."   # genel yayında isteğe bağlı erişim kodu
+    ports:
+      - "8000:8000"
+    volumes:
+      - feedback:/app/data/feedback
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  feedback:

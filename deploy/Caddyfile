@@ -1,0 +1,10 @@
+# alan-adiniz.example.com adresini kendi alan adınızla değiştirin; DNS A kaydı VPS'e bakmalı.
+# Caddy HTTPS sertifikasını otomatik alır. Uygulama yalnızca 127.0.0.1:8000'de dinlesin
+# (docker-compose'ta ports: "127.0.0.1:8000:8000") ve MEDRAG_TRUST_PROXY_HEADERS=1 olsun.
+alan-adiniz.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8000 {
+		flush_interval -1   # SSE akışı tamponlanmasın
+		header_up X-Forwarded-For {remote_host}   # istemci başlığını ez: sahtecilik olmasın
+	}
+}
