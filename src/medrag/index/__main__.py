@@ -18,22 +18,24 @@ def check_api(settings, chunks: list[dict]) -> None:
     api_key = os.environ.get("EVREN_API_KEY")
     if not api_key:
         raise SystemExit("EVREN_API_KEY tanımlı değil")
-    for size in (1, 8, 32, 32):
+    for size, count in ((64, 1), (64, 6), (64, 12)):
         embedder = ApiEmbedder(
             settings.embed_api_url,
             api_key,
             settings.embed_api_model,
             settings.embed_dimensions,
             batch_size=size,
+            workers=count,
         )
-        texts = [passage_text(c) for c in chunks[:size]]
+        texts = [passage_text(c) for c in chunks[: size * count]]
         start = time.time()
         try:
             vecs = embedder.encode_passages(texts)
         except Exception as e:  # noqa: BLE001 - teşhis aracı: her hatayı olduğu gibi göster
-            print(f"batch={size}: HATA {type(e).__name__}: {e} ({time.time() - start:.1f}s)", flush=True)
+            print(f"{count} paralel x {size}: HATA {type(e).__name__}: {e} ({time.time() - start:.1f}s)", flush=True)
             continue
-        print(f"batch={size}: {time.time() - start:.1f}s, şekil={vecs.shape}", flush=True)
+        took = time.time() - start
+        print(f"{count} paralel x {size}: {took:.1f}s, {len(texts) / took:.1f} metin/sn, şekil={vecs.shape}", flush=True)
 
 
 def main() -> None:

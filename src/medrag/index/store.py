@@ -14,7 +14,7 @@ def load_chunks(data_dir: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def build_vectors(chunks: list[dict], embedder: Embedder, batch: int = 256) -> np.ndarray:
+def build_vectors(chunks: list[dict], embedder: Embedder, batch: int = 384) -> np.ndarray:
     parts = []
     for i in range(0, len(chunks), batch):
         texts = [passage_text(c) for c in chunks[i : i + batch]]

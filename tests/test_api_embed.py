@@ -31,3 +31,13 @@ def test_query_gets_instruction_prefix_but_passage_does_not():
 
 def test_url():
     assert make([]).url == "http://x/v1/embeddings"
+
+
+def test_parallel_batches_keep_order():
+    def post(inputs):
+        return [[float(t), 1.0] for t in inputs]
+
+    emb = ApiEmbedder("http://x/v1", "K", "m", dimensions=2, batch_size=2, workers=4, post=post)
+    vecs = emb.encode_passages([str(i + 1) for i in range(9)])
+    order = np.argsort(vecs[:, 0] / vecs[:, 1])  # normalize oran 1..9 ile artıyor
+    assert order.tolist() == list(range(9))

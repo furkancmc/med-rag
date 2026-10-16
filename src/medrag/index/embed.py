@@ -3,6 +3,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Protocol
 
 import numpy as np
@@ -37,7 +38,8 @@ class ApiEmbedder:
         api_key: str,
         model: str,
         dimensions: int = 1024,
-        batch_size: int = 32,
+        batch_size: int = 64,
+        workers: int = 6,
         post: Callable[[list[str]], list[list[float]]] | None = None,
     ):
         self.url = base_url.rstrip("/") + "/embeddings"
@@ -45,6 +47,7 @@ class ApiEmbedder:
         self.model = model
         self.dimensions = dimensions
         self.batch_size = batch_size
+        self.workers = workers
         self._post = post or self._http_post
 
     def _http_post(self, inputs: list[str]) -> list[list[float]]:
@@ -69,9 +72,10 @@ class ApiEmbedder:
         raise RuntimeError("ulaşılamaz")
 
     def _encode(self, texts: list[str]) -> np.ndarray:
-        rows: list[list[float]] = []
-        for i in range(0, len(texts), self.batch_size):
-            rows += self._post(texts[i : i + self.batch_size])
+        # İstek başına ~3-4 sn sabit gecikme var; paralel göndermek süreyi dakikalara indirir.
+        batches = [texts[i : i + self.batch_size] for i in range(0, len(texts), self.batch_size)]
+        with ThreadPoolExecutor(max_workers=self.workers) as pool:
+            rows = [row for part in pool.map(self._post, batches) for row in part]
         vecs = np.asarray(rows, dtype=np.float32)[:, : self.dimensions]
         return vecs / np.linalg.norm(vecs, axis=1, keepdims=True)
 
