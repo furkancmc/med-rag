@@ -25,3 +25,24 @@ Cevaplar Claude API ile üretilir, kaynak gösterilir.
 - Acil belirtide 112'ye yönlendir.
 - Her yanıtta kısa tıbbi uyarı.
 - Testlerde Claude ve embedding mock'lanır.
+
+## Sonraki adımlar (öneriler, öncelik sırasıyla)
+
+Etki ve zahmete göre sıralı. Hepsi mevcut altyapının (Evren API, Actions, değerlendirme düzeni) üstüne kurulur.
+
+1. **Yapılandırılmış belirti değerlendirmesi (triage diyaloğu).** Asistan eksik bilgiyi sorar (ne zamandır, şiddeti,
+   eşlik eden belirtiler, yaş, kronik hastalık) ve sonunda seviye verir: 112 / bugün hekime / randevu / evde izle.
+   "Doktor gibi" hissin ve güvenliğin en büyük kazancı.
+2. **Cevap doğrulama katmanı.** Üretilen cevaptaki her iddiayı atıf yaptığı kaynakla çalışma anında kontrol et;
+   desteklenmeyen cümleyi çıkar ya da işaretle. Şu an kaynağa sadakat yalnızca testte ölçülüyor.
+3. **Daha güçlü arama.** Yeniden sıralayıcı (reranker), sorgu genişletme, daha iyi parçalama. Hedef: recall@1'i
+   0,65'ten yukarı çekmek. Değerlendirme setini 150'den 500+ soruya çıkarmak ve insan onaylı bir altın küme eklemek.
+4. **Daha zengin ve güncel bilgi tabanı.** Açık lisanslı ek kaynaklar (PubMed özetleri, openFDA ilaç prospektüsleri,
+   uygun lisanslı Türkçe halk sağlığı içeriği), haftalık otomatik yenileme workflow'u.
+5. **Fotoğraf ve ses.** İlaç kutusu ya da tahlil sonucu fotoğrafını görsel modelle okuyup açıklama; sesle soru sorma
+   ve cevabı sesli dinleme.
+6. **Tahlil yorumlama.** Referans aralıklarına dayalı, kural tabanlı ve LLM açıklamalı "değerim normal mi?" aracı.
+7. **Üretim hazırlığı.** Hız sınırı, kullanıcı oturumu ve basit giriş, kişisel veri minimizasyonu (KVKK),
+   metrikler, önbellek, gerçek PWA, geri bildirim butonları (👍/👎) ve barındırma.
+8. **Güvenlik sertleştirme.** Acil durum için kural + LLM sınıflandırıcı ikinci katman, otomatik red-team senaryoları,
+   kaynak metnine gömülü talimat (prompt injection) setleri, yazıyla yazılmış dozların yakalanması.

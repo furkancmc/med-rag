@@ -6,7 +6,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="MEDRAG_", extra="ignore")
 
-    model: str = "claude-sonnet-5-5"
     data_dir: Path = Path("data")
     top_k: int = 5
     embed_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
