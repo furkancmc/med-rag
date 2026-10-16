@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Belirti Değerlendirme - medrag</title>
+<link rel="stylesheet" href="/static/base.css">
+<style>
+  .progress { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+  @media (prefers-reduced-motion: reduce) { .progress > span { transition: none; } }
+  .step[hidden] { display: none; }
+  .step h2 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+  .step h2:focus { outline: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { max-width: 100%; text-align: left; }
+  .scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .scale .chip { text-align: center; padding: 6px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--accent); }
+  .actions { display: flex; gap: 8px; }
+  .actions .btn-primary { flex: 1; }
+  .result-head { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .result-head .badge { font-size: 15px; padding: 6px 14px; }
+  .list { margin: 0; padding-left: 20px; }
+  .list li { margin-bottom: 4px; }
+  .count { font-size: 13px; color: var(--muted); }
+  .err { margin-top: 4px; }
+  #emergency { display: none; }
+  #emergency.show { display: block; }
+  #emergency a.btn { margin-top: 10px; text-decoration: none; }
+  .loading { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+  .loading[hidden] { display: none; }
+  .card + .card { margin-top: 0; }
+  main, .container, .card, .stack, .field { min-width: 0; }
+  p, li, h2 { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>Belirti Değerlendirme</h1>
+    <p>Birkaç soruyla ne kadar acil olduğunu değerlendirin</p>
+  </header>
+  <main class="app-main">
+    <div class="container stack">
+      <div id="emergency" class="alert alert-danger" role="alert" tabindex="-1">
+        <div id="emergency-text"></div>
+        <a class="btn btn-danger btn-block" href="tel:112">112'yi arayın</a>
+      </div>
+
+      <div class="progress" role="progressbar" aria-label="İlerleme" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress"><span></span></div>
+
+      <div id="status" class="loading" role="status" aria-live="polite" hidden><div class="spinner" aria-hidden="true"></div><span id="status-text"></span></div>
+      <div id="error" class="alert alert-warn err" role="alert" hidden></div>
+
+      <!-- Adım 1: şikâyet ve profil -->
+      <section id="step-1" class="step stack" aria-labelledby="h1">
+        <h2 id="h1" tabindex="-1">Neyiniz var?</h2>
+        <form id="form-start" class="card stack" novalidate>
+          <div class="field">
+            <label class="label" for="complaint">Ana şikâyetiniz</label>
+            <textarea id="complaint" class="textarea" maxlength="500" required placeholder="Örn. İki gündür başım ağrıyor ve hafif ateşim var"></textarea>
+            <div class="count"><span id="complaint-count">0</span>/500</div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label class="label" for="age">Yaş <span class="hint">(isteğe bağlı)</span></label>
+              <input id="age" class="input" type="number" inputmode="numeric" min="0" max="120">
+            </div>
+            <div class="field" id="months-wrap" hidden>
+              <label class="label" for="months">Bebek yaşı (ay)</label>
+              <input id="months" class="input" type="number" inputmode="numeric" min="0" max="36">
+            </div>
+          </div>
+          <div class="field" role="group" aria-labelledby="sex-label">
+            <span class="label" id="sex-label">Cinsiyet <span class="hint">(isteğe bağlı)</span></span>
+            <div class="chips" id="sex-chips">
+              <button type="button" class="chip" aria-pressed="false" data-v="kadın">Kadın</button>
+              <button type="button" class="chip" aria-pressed="false" data-v="erkek">Erkek</button>
+            </div>
+          </div>
+          <label class="check" id="preg-wrap" hidden><input type="checkbox" id="pregnant"> Hamileyim</label>
+          <div class="field" role="group" aria-labelledby="chronic-label">
+            <span class="label" id="chronic-label">Bilinen hastalıklar <span class="hint">(isteğe bağlı)</span></span>
+            <div class="chips" id="chronic-chips"></div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="start-btn">Devam</button>
+        </form>
+        <p class="disclaimer">Bilgileriniz sunucuda saklanmaz. Bu araç teşhis koymaz; acil durumda doğrudan 112'yi arayın.</p>
+      </section>
+
+      <!-- Adım 2: sorular -->
+      <section id="step-2" class="step stack" aria-labelledby="h2" hidden>
+        <h2 id="h2" tabindex="-1">Birkaç soru</h2>
+        <div class="card stack" id="qcard">
+          <div class="count" id="qcount"></div>
+          <div class="label" id="qtext" style="font-size:17px"></div>
+          <div class="hint" id="qwhy"></div>
+          <div id="qinput"></div>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" id="back-btn">Geri</button>
+          <button class="btn btn-primary" type="button" id="next-btn">İleri</button>
+        </div>
+      </section>
+
+      <!-- Adım 3: sonuç -->
+      <section id="step-3" class="step stack" aria-labelledby="h3" hidden>
+        <h2 id="h3" tabindex="-1">Değerlendirme sonucu</h2>
+        <div class="card stack">
+          <div class="result-head"><span id="level-badge" class="badge"></span></div>
+          <div class="prose" id="summary"></div>
+        </div>
+        <div class="card" id="reasons-card"><h3 class="card-title">Neden bu sonuç?</h3><ul class="list" id="reasons"></ul></div>
+        <div class="card" id="flags-card"><h3 class="card-title">Şunlar olursa hemen başvurun</h3><ul class="list" id="flags"></ul></div>
+        <div class="card" id="care-card"><h3 class="card-title">Evde dikkat edilebilecekler</h3><ul class="list" id="care"></ul></div>
+        <details class="card sources" id="sources-card"><summary>Kaynaklar</summary><ol id="sources"></ol></details>
+        <p class="disclaimer" id="disclaimer"></p>
+        <div class="stack-sm">
+          <a class="btn btn-block" id="chat-link" href="/">Sohbette devam et</a>
+          <button class="btn btn-ghost btn-block" type="button" id="restart">Yeniden başla</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <nav id="app-nav"></nav>
+</div>
+<script src="/static/common.js"></script>
+<script>
+(function () {
+  "use strict";
+  const M = window.MedRAG;
+  const $ = (id) => document.getElementById(id);
+  const CHRONIC = ["Diyabet", "Yüksek tansiyon", "Kalp hastalığı", "Astım / KOAH", "Böbrek hastalığı", "Bağışıklık baskılanması", "Kanser tedavisi"];
+  const LEVEL_LABELS = { emergency: "Hemen 112'yi arayın", today: "Bugün bir hekime başvurun", soon: "Birkaç gün içinde randevu alın", home: "Evde izleyebilirsiniz" };
+
+  const state = { complaint: "", profile: {}, questions: [], answers: {}, idx: 0, sex: null, chronic: new Set() };
+
+  function show(step) {
+    ["step-1", "step-2", "step-3"].forEach((id) => { $(id).hidden = id !== "step-" + step; });
+    const total = state.questions.length + 2;
+    const pos = step === 1 ? 0 : step === 3 ? total : 1 + state.idx;
+    const pct = Math.round((pos / total) * 100);
+    $("progress").setAttribute("aria-valuenow", pct);
+    $("progress").firstElementChild.style.width = pct + "%";
+    const h = $("h" + step);
+    h.focus({ preventScroll: false });
+    window.scrollTo({ top: 0 });
+  }
+  function busy(msg) {
+    $("status").hidden = !msg;
+    $("status-text").textContent = msg || "";
+    ["start-btn", "next-btn", "back-btn"].forEach((id) => { $(id).disabled = !!msg; });
+  }
+  function showError(msg) { $("error").hidden = !msg; $("error").textContent = msg || ""; }
+  function showEmergency(text) {
+    $("emergency-text").innerHTML = M.renderMarkdown(text || "Lütfen beklemeden 112'yi arayın.");
+    $("emergency").classList.add("show");
+    $("emergency").focus();
+    window.scrollTo({ top: 0 });
+  }
+  function fill(listId, cardId, items) {
+    const ul = $(listId);
+    ul.innerHTML = (items || []).map((t) => "<li>" + M.renderMarkdown(t).replace(/^<p>|<\/p>$/g, "") + "</li>").join("");
+    $(cardId).hidden = !(items && items.length);
+  }
+  function toggleChip(btn, single) {
+    const on = btn.getAttribute("aria-pressed") === "true";
+    if (single) btn.parentElement.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
+    btn.setAttribute("aria-pressed", on ? "false" : "true");
+  }
+
+  // ---- Adım 1 ----
+  CHRONIC.forEach((name) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", "false"); b.textContent = name;
+    b.addEventListener("click", () => { toggleChip(b, false); b.getAttribute("aria-pressed") === "true" ? state.chronic.add(name) : state.chronic.delete(name); });
+    $("chronic-chips").appendChild(b);
+  });
+  $("sex-chips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    toggleChip(b, true);
+    state.sex = b.getAttribute("aria-pressed") === "true" ? b.dataset.v : null;
+    $("preg-wrap").hidden = state.sex !== "kadın";
+    if (state.sex !== "kadın") $("pregnant").checked = false;
+  });
+  $("age").addEventListener("input", () => { const a = $("age").value; $("months-wrap").hidden = !(a !== "" && Number(a) <= 1); });
+  $("complaint").addEventListener("input", () => { $("complaint-count").textContent = $("complaint").value.length; });
+
+  $("form-start").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    showError("");
+    const complaint = $("complaint").value.trim();
+    if (complaint.length < 2) { showError("Lütfen şikâyetinizi yazın."); $("complaint").focus(); return; }
+    const age = $("age").value === "" ? null : Number($("age").value);
+    const months = $("months").value === "" || $("months-wrap").hidden ? null : Number($("months").value);
+    state.complaint = complaint;
+    state.profile = { age, age_months: months, sex: state.sex, pregnant: state.sex === "kadın" ? $("pregnant").checked : null, chronic: [...state.chronic] };
+    busy("Sorular hazırlanıyor...");
+    try {
+      const res = await M.postJSON("/api/assess/start", Object.assign({ complaint }, state.profile));
+      busy("");
+      if (res.emergency) { showEmergency(res.emergency_text); return; }
+      state.questions = res.questions; state.answers = {}; state.idx = 0;
+      renderQuestion(); show(2);
+    } catch (err) { busy(""); showError("Bir sorun oluştu: " + err.message); }
+  });
+
+  // ---- Adım 2 ----
+  function renderQuestion() {
+    const q = state.questions[state.idx];
+    $("qcount").textContent = "Soru " + (state.idx + 1) + " / " + state.questions.length;
+    $("qtext").textContent = q.text;
+    $("qwhy").textContent = q.why || "";
+    $("qwhy").hidden = !q.why;
+    const box = $("qinput"); box.innerHTML = "";
+    const cur = state.answers[q.id];
+    if (q.type === "single" || q.type === "multi" || q.type === "scale") {
+      const opts = q.type === "scale" ? Array.from({ length: 10 }, (_, i) => String(i + 1)) : q.options || [];
+      const wrap = document.createElement("div");
+      wrap.className = q.type === "scale" ? "scale" : "chips";
+      wrap.setAttribute("role", "group"); wrap.setAttribute("aria-labelledby", "qtext");
+      const selected = new Set((cur || "").split(" | ").filter(Boolean));
+      opts.forEach((o) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "chip"; b.textContent = o;
+        b.setAttribute("aria-pressed", selected.has(o) ? "true" : "false");
+        b.addEventListener("click", () => {
+          toggleChip(b, q.type !== "multi");
+          const sel = [...wrap.querySelectorAll('.chip[aria-pressed="true"]')].map((c) => c.textContent);
+          if (sel.length) state.answers[q.id] = sel.join(" | "); else delete state.answers[q.id];
+        });
+        wrap.appendChild(b);
+      });
+      if (q.type === "scale") {
+        const hint = document.createElement("div"); hint.className = "hint"; hint.textContent = "1 = çok hafif, 10 = dayanılmaz";
+        box.appendChild(wrap); box.appendChild(hint);
+      } else box.appendChild(wrap);
+    } else {
+      const t = document.createElement("textarea");
+      t.className = "textarea"; t.maxLength = 400; t.value = cur || ""; t.setAttribute("aria-labelledby", "qtext");
+      t.addEventListener("input", () => { if (t.value.trim()) state.answers[q.id] = t.value.trim(); else delete state.answers[q.id]; });
+      box.appendChild(t);
+    }
+    $("next-btn").textContent = state.idx === state.questions.length - 1 ? "Sonucu göster" : "İleri";
+    $("back-btn").textContent = state.idx === 0 ? "Başa dön" : "Geri";
+  }
+  function moveFocusToQuestion() { $("qtext").setAttribute("tabindex", "-1"); $("qtext").focus(); }
+  $("back-btn").addEventListener("click", () => {
+    showError("");
+    if (state.idx === 0) { show(1); return; }
+    state.idx -= 1; renderQuestion(); show(2); moveFocusToQuestion();
+  });
+  $("next-btn").addEventListener("click", async () => {
+    showError("");
+    if (state.idx < state.questions.length - 1) { state.idx += 1; renderQuestion(); show(2); moveFocusToQuestion(); return; }
+    const answers = state.questions.filter((q) => state.answers[q.id]).map((q) => ({ id: q.id, question: q.text, answer: state.answers[q.id] }));
+    busy("Değerlendiriliyor... (birkaç saniye sürebilir)");
+    try {
+      const res = await M.postJSON("/api/assess/finish", { complaint: state.complaint, profile: state.profile, answers });
+      busy(""); renderResult(res);
+    } catch (err) { busy(""); showError("Değerlendirme yapılamadı: " + err.message); }
+  });
+
+  // ---- Adım 3 ----
+  function renderResult(r) {
+    const badge = $("level-badge");
+    badge.className = "badge level-" + r.level;
+    badge.textContent = r.level_label || LEVEL_LABELS[r.level];
+    $("summary").innerHTML = M.renderMarkdown(r.summary);
+    fill("reasons", "reasons-card", r.reasons);
+    fill("flags", "flags-card", r.red_flags_to_watch);
+    fill("care", "care-card", r.self_care);
+    const src = r.sources || [];
+    $("sources").innerHTML = src.map((s) =>
+      '<li id="src-' + s.n + '">' + (s.url ? '<a href="' + M.escapeHtml(s.url) + '" target="_blank" rel="noopener">' + M.escapeHtml(s.title) + "</a>" : M.escapeHtml(s.title)) +
+      " <span>(" + M.escapeHtml(s.source) + (s.license ? ", " + M.escapeHtml(s.license) : "") + ")</span></li>").join("");
+    $("sources-card").hidden = !src.length;
+    $("disclaimer").textContent = r.disclaimer || M.DISCLAIMER;
+    const q = "Şikâyetim: " + state.complaint + ". Değerlendirme sonucu: " + (r.level_label || "") + ". Bu konuda daha fazla bilgi verir misiniz?";
+    $("chat-link").href = "/?q=" + encodeURIComponent(q);
+    if (r.level === "emergency") showEmergency("Verdiğiniz bilgiler acil bir duruma işaret ediyor olabilir. Lütfen beklemeden **112**'yi arayın.");
+    else $("emergency").classList.remove("show");
+    show(3);
+  }
+  $("restart").addEventListener("click", () => {
+    state.questions = []; state.answers = {}; state.idx = 0;
+    $("emergency").classList.remove("show"); showError("");
+    $("complaint").value = ""; $("complaint-count").textContent = "0";
+    show(1); $("complaint").focus();
+  });
+
+  show(1);
+})();
+</script>
+</body>
+</html>

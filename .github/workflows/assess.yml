@@ -1,0 +1,39 @@
+name: Belirti değerlendirme testi
+
+# Gerçek indeks ve Evren API ile belirti değerlendirme senaryolarını çalıştırır (simüle hasta).
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Değerlendirme modeli (boşsa ayardaki varsayılan)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  assess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Senaryolar
+        run: |
+          if [ -n "${{ inputs.model }}" ]; then ARGS="--model ${{ inputs.model }}"; fi
+          python -m medrag.eval assess $ARGS
+      - name: Sonuçları commit'le
+        if: ${{ always() }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add eval/assess_results.md || true
+          git commit -m "Belirti değerlendirme sonuçları" || exit 0
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
