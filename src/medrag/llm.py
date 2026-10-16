@@ -56,16 +56,23 @@ class EvrenLLM:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        data = self._post(payload)
-        try:
-            choice = data["choices"][0]
-            content = choice["message"].get("content")
-        except (KeyError, IndexError, TypeError, AttributeError) as e:
-            raise LLMError(f"Beklenmeyen LLM cevabı: {str(data)[:200]}") from e
-        if not content or not content.strip():
-            # Düşünen modellerde token sınırı iç düşünmeye harcanırsa içerik boş gelebilir.
-            raise LLMError(f"LLM boş cevap verdi (finish_reason={choice.get('finish_reason')})")
-        return content.strip()
+        last = ""
+        for _ in range(3):  # yönlendirici bazen boş içerik döndürüyor; birkaç kez dene
+            data = self._post(payload)
+            try:
+                choice = data["choices"][0]
+                message = choice["message"]
+            except (KeyError, IndexError, TypeError) as e:
+                raise LLMError(f"Beklenmeyen LLM cevabı: {str(data)[:200]}") from e
+            content = message.get("content")
+            if content and content.strip():
+                return content.strip()
+            routed = (data.get("usage") or {}).get("evren", {}).get("routed_model")
+            last = (
+                f"finish_reason={choice.get('finish_reason')}, refusal={message.get('refusal')!r}, "
+                f"model={routed or data.get('model')}"
+            )
+        raise LLMError(f"LLM boş cevap verdi ({last})")
 
     def raw(self, messages: list[dict], max_tokens: int) -> dict:
         """Teşhis için ham cevabı döner."""
