@@ -23,7 +23,7 @@ jobs:
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -e ".[embed]"
       - run: python -m medrag.ingest build
-      - run: python -m medrag.index embed
+      - run: python -m medrag.index embed --provider local
       - name: İndeksi commit'le
         run: |
           git config user.name "github-actions"

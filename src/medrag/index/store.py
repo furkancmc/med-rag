@@ -22,10 +22,14 @@ def build_vectors(chunks: list[dict], embedder: Embedder, batch: int = 256) -> n
     return np.vstack(parts) if parts else np.zeros((0, 0), dtype=np.float32)
 
 
-def save_vectors(index_dir: Path, ids: list[str], vectors: np.ndarray) -> None:
+def save_vectors(
+    index_dir: Path, ids: list[str], vectors: np.ndarray, meta: dict | None = None
+) -> None:
     index_dir.mkdir(parents=True, exist_ok=True)
     np.save(index_dir / "vectors.npy", vectors.astype(np.float16))  # yarı boyut, kalite kaybı ihmal edilebilir
     (index_dir / "ids.json").write_text(json.dumps(ids), encoding="utf-8")
+    # hangi modelle üretildi; sorgular da aynı modelle vektöre çevrilmeli
+    (index_dir / "meta.json").write_text(json.dumps(meta or {}, indent=2), encoding="utf-8")
 
 
 def load_vectors(index_dir: Path, chunks: list[dict]) -> np.ndarray:

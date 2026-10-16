@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     data_dir: Path = Path("data")
     embedding_model: str = "intfloat/multilingual-e5-small"
     top_k: int = 5
+    embed_provider: str = "api"  # api | local
+    embed_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
+    embed_api_model: str = "qwen3-embedding-8b"
+    embed_dimensions: int = 1024
 
 
 def get_settings() -> Settings:

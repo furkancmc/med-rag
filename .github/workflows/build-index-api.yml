@@ -1,0 +1,32 @@
+name: İndeks oluştur (API)
+
+# qwen3-embedding-8b ile embedding hesaplar, data/index_qwen3 altına commit'ler.
+# Sadece elle çalıştırılır. Repo ayarlarında EVREN_API_KEY secret'ı tanımlı olmalı.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  embed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python -m medrag.ingest build
+      - run: python -m medrag.index embed --provider api --index-dir data/index_qwen3
+        env:
+          EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+      - name: İndeksi commit'le
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -f data/index_qwen3
+          git commit -m "Qwen3 embedding indeksi oluşturuldu" || exit 0
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
