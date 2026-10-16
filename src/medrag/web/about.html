@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hakkında · Sağlık Asistanı</title>
+<meta name="description" content="Sağlık Asistanı nasıl çalışır, hangi kaynakları kullanır, verilerinize ne olur.">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/common.js"></script>
+<link rel="stylesheet" href="/static/about.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="app-bar">
+      <div class="brand">
+        <img class="brand-mark" src="/static/icons/icon.svg" alt="" width="36" height="36">
+        <div>
+          <h1>Hakkında</h1>
+          <p>Nasıl çalışır, neye dayanır</p>
+        </div>
+      </div>
+      <div class="header-actions"><button type="button" class="btn btn-icon" data-theme-toggle></button></div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="container stack stack-lg">
+
+      <section class="card card-accent about-hero" aria-labelledby="h-what">
+        <h2 class="card-title" id="h-what">Sağlık Asistanı nedir?</h2>
+        <p>Sağlık sorularınıza, güvenilir açık kaynaklardan bulduğu bilgilere dayanarak Türkçe yanıt veren bir asistandır. Her cevabın hangi kaynaktan geldiğini gösterir.</p>
+      </section>
+
+      <section class="two-col" aria-label="Neler yapar, neler yapmaz">
+        <div class="card">
+          <h2 class="card-title">Yapar</h2>
+          <ul class="do-list">
+            <li>Hastalıklar, belirtiler ve korunma hakkında genel bilgi verir</li>
+            <li>Cevabını kaynaklarla gösterir</li>
+            <li>Acil görünen belirtilerde 112'ye yönlendirir</li>
+            <li>Tahlil değerlerinin ne anlama geldiğini açıklar</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2 class="card-title">Yapmaz</h2>
+          <ul class="dont-list">
+            <li>Doktor değildir; teşhis koymaz</li>
+            <li>İlaç önermez, doz söylemez</li>
+            <li>Muayenenin ya da tahlilin yerini tutmaz</li>
+            <li>Kaynakta olmayan bilgiyi uydurmaz; bilmiyorsa söyler</li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-how">
+        <h2 class="section-title" id="h-how">Nasıl çalışır?</h2>
+        <div class="card">
+          <ol class="flow">
+            <li><strong>Soruyu anlar</strong><span class="muted">Önce acil bir durum olup olmadığına bakar.</span></li>
+            <li><strong>Kaynaklarda arar</strong><span class="muted">Kaynak koleksiyonunda en ilgili bölümleri bulur ve sıralar.</span></li>
+            <li><strong>Kaynaklara dayanarak yazar</strong><span class="muted">Cevap yalnızca bulunan bölümlerden oluşur; her bilgi [1], [2] gibi atıflarla işaretlenir.</span></li>
+            <li><strong>Kontrol eder</strong><span class="muted">Cevaptaki cümleler kaynaklarla karşılaştırılır; doğrulanamayanlar altı noktalı çizgiyle işaretlenir.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-src">
+        <h2 class="section-title" id="h-src">Kaynaklar ve lisanslar</h2>
+        <div id="sources-box" aria-live="polite">
+          <div class="card" aria-hidden="true"><div class="skeleton-line w-80"></div><div class="skeleton-line w-60"></div><div class="skeleton-line w-80"></div></div>
+        </div>
+        <p class="hint mt-2">Yeni kaynaklar eklendikçe burada görünür.</p>
+      </section>
+
+      <section aria-labelledby="h-safe">
+        <h2 class="section-title" id="h-safe">Güvenlik katmanları</h2>
+        <div class="card">
+          <ul class="layers">
+            <li><strong>Acil durum kontrolü:</strong> Göğüs ağrısı, nefes darlığı gibi belirtilerde cevap yerine önce 112 uyarısı gösterilir.</li>
+            <li><strong>Doz filtresi:</strong> Cevaplarda ilaç dozu ve kullanım miktarı verilmez.</li>
+            <li><strong>Kaynağa bağlılık:</strong> Kaynaklarda bulunmayan bilgi cevaba eklenmez.</li>
+            <li><strong>Çalışma anı doğrulaması:</strong> Cevap cümleleri kaynaklarla karşılaştırılır, desteklenmeyenler işaretlenir.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-privacy">
+        <h2 class="section-title" id="h-privacy">Gizlilik ve KVKK</h2>
+        <div class="card stack-sm">
+          <ul class="layers">
+            <li>Hesap açmanız gerekmez; sizi tanımlayan bir bilgi istenmez.</li>
+            <li>Sohbet geçmişiniz yalnızca bu cihazın tarayıcısında durur. Sohbet ekranından silebilirsiniz.</li>
+            <li>Gönderdiğiniz görsel ve ses kayıtları sadece işlenmesi süresince bellekte tutulur, saklanmaz.</li>
+            <li>👍/👎 geri bildirimleri IP adresi olmadan kaydedilir.</li>
+          </ul>
+          <div class="row mt-2">
+            <button type="button" class="btn btn-sm" id="clear-local">Bu cihazdaki sohbeti sil</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="eval-section" aria-labelledby="h-eval" hidden>
+        <h2 class="section-title" id="h-eval">Değerlendirme özeti</h2>
+        <div class="card" id="eval-box"></div>
+      </section>
+
+      <section class="alert alert-danger alert-row" role="note" aria-label="Acil durum">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div>Acil bir durumdaysanız bu uygulamayı beklemeyin: <a href="tel:112" class="link-strong">112'yi arayın</a>.</div>
+      </section>
+
+      <section class="about-foot" aria-label="Uyarı ve sürüm">
+        <p class="disclaimer" id="disclaimer"></p>
+        <p class="small muted">Sürüm: <span id="version">—</span></p>
+      </section>
+    </div>
+  </main>
+  <nav id="app-nav"></nav>
+</div>
+
+
+<script src="/static/about.js"></script>
+</body>
+</html>
