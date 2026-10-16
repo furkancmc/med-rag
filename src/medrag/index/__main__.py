@@ -38,6 +38,54 @@ def check_api(settings, chunks: list[dict]) -> None:
         print(f"{count} paralel x {size}: {took:.1f}s, {len(texts) / took:.1f} metin/sn, şekil={vecs.shape}", flush=True)
 
 
+def list_models(settings) -> None:
+    """Servisteki modelleri listeler (rerank ve görsel model var mı görmek için)."""
+    import json
+    import urllib.request
+
+    req = urllib.request.Request(
+        settings.llm_api_url.rstrip("/") + "/models",
+        headers={"Authorization": f"Bearer {os.environ.get('EVREN_API_KEY', '')}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:  # noqa: BLE001 - teşhis aracı
+        print("model listesi alınamadı:", type(e).__name__, e, flush=True)
+        return
+    for m in data.get("data", []):
+        extra = {k: v for k, v in m.items() if k not in ("id", "object", "created", "owned_by")}
+        print("MODEL", m.get("id"), json.dumps(extra, ensure_ascii=False)[:300], flush=True)
+
+
+def check_rerank(settings) -> None:
+    """Olası rerank uç noktalarını dener."""
+    import json
+    import urllib.request
+
+    body = {
+        "query": "diyabet belirtileri",
+        "documents": ["Diyabette sık idrara çıkma görülür.", "Grip ateş yapar."],
+    }
+    for path in ("/rerank", "/v1/rerank"):
+        for model in ("qwen3-reranker-8b", "qwen3-reranker-4b", "qwen3-reranker", "bge-reranker-v2-m3"):
+            base = settings.llm_api_url.rstrip("/")
+            url = (base[: -len("/v1")] if path.startswith("/v1") and base.endswith("/v1") else base) + path
+            req = urllib.request.Request(
+                url,
+                data=json.dumps({**body, "model": model}).encode(),
+                headers={
+                    "Authorization": f"Bearer {os.environ.get('EVREN_API_KEY', '')}",
+                    "Content-Type": "application/json",
+                },
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    print("RERANK OK", url, model, resp.read()[:300], flush=True)
+            except Exception as e:  # noqa: BLE001 - teşhis aracı
+                print("RERANK yok", url, model, type(e).__name__, str(e)[:120], flush=True)
+
+
 def check_chat(settings) -> None:
     """Sohbet uç noktasının cevap yapısını yazdırır (içerik metni değil, alanlar ve uzunluklar)."""
     import time
@@ -81,6 +129,8 @@ def main() -> None:
     chunks = load_chunks(settings.data_dir)
 
     if args.cmd == "check":
+        list_models(settings)
+        check_rerank(settings)
         check_chat(settings)
         check_api(settings, chunks)
         return
