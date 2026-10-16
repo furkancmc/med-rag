@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     embed_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
     embed_api_model: str = "qwen3-embedding-8b"
     embed_dimensions: int = 1024
+    index_dir: Path = Path("data/index_qwen3")
+    llm_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
+    llm_model: str = "auto"
 
 
 def get_settings() -> Settings:
