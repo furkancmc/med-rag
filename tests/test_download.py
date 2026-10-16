@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from medrag.ingest.download import (
     category_titles,
     download_medlineplus,
@@ -49,3 +51,11 @@ def test_download_wikipedia_writes_jsonl(tmp_path):
     path = download_wikipedia(tmp_path, "tr", ["Kategori:Üst"], get=fake_wiki)
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     assert rows[0]["title"] == "Astım"
+
+
+def test_empty_category_is_an_error(tmp_path):
+    def empty(url):
+        return json.dumps({"query": {"categorymembers": []}}).encode()
+
+    with pytest.raises(RuntimeError):
+        download_wikipedia(tmp_path, "tr", ["Kategori:Yok"], get=empty)

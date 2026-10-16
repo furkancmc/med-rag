@@ -1,12 +1,14 @@
 import json
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 
-USER_AGENT = "medrag/0.1 (egitim amacli RAG projesi)"
+USER_AGENT = "medrag/0.1 (https://github.com/furkancmc/phone; egitim amacli RAG projesi)"
+WIKI_DELAY = 1.0  # Vikipedi istekleri arasında saniye
 MEDLINE_INDEX = "https://medlineplus.gov/xml.html"
 MEDLINE_TOPICS = re.compile(r'href="([^"]*mplus_topics_\d{4}-\d{2}-\d{2}\.xml)"')
 
@@ -17,17 +19,28 @@ DEFAULT_CATEGORIES = {
 }
 
 
-def http_get(url: str, retries: int = 3) -> bytes:
+def http_get(url: str, retries: int = 5) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     for attempt in range(retries):
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
                 return resp.read()
+        except urllib.error.HTTPError as e:
+            retryable = e.code == 429 or e.code >= 500
+            if not retryable or attempt == retries - 1:
+                raise
+            wait = e.headers.get("Retry-After", "")
+            time.sleep(int(wait) if wait.isdigit() else 5 * 2**attempt)
         except OSError:
             if attempt == retries - 1:
                 raise
             time.sleep(2**attempt)
     raise RuntimeError("ulaşılamaz")
+
+
+def wiki_get(url: str) -> bytes:
+    time.sleep(WIKI_DELAY)
+    return http_get(url)
 
 
 def find_medlineplus_urls(index_html: str) -> list[str]:
@@ -63,7 +76,7 @@ def wiki_api(lang: str, params: dict) -> str:
 def category_titles(
     lang: str,
     category: str,
-    get: Callable[[str], bytes] = http_get,
+    get: Callable[[str], bytes] = wiki_get,
     depth: int = 1,
     limit: int = 500,
 ) -> list[str]:
@@ -98,7 +111,7 @@ def category_titles(
 
 
 def fetch_extracts(
-    lang: str, titles: list[str], get: Callable[[str], bytes] = http_get
+    lang: str, titles: list[str], get: Callable[[str], bytes] = wiki_get
 ) -> list[dict]:
     """Başlıkların düz metin içeriğini 20'şerli gruplar halinde çeker."""
     pages = []
@@ -122,12 +135,15 @@ def download_wikipedia(
     categories: list[str],
     limit: int = 500,
     depth: int = 1,
-    get: Callable[[str], bytes] = http_get,
+    get: Callable[[str], bytes] = wiki_get,
 ) -> Path:
     titles: list[str] = []
     for cat in categories:
         titles += category_titles(lang, cat, get=get, depth=depth, limit=limit)
     titles = list(dict.fromkeys(titles))[:limit]
+    if not titles:
+        raise RuntimeError(f"{lang} için kategorilerde makale bulunamadı: {categories}")
+    print(f"{lang}: {len(titles)} makale başlığı bulundu")
     pages = fetch_extracts(lang, titles, get=get)
     out_dir = raw_dir / "wikipedia"
     out_dir.mkdir(parents=True, exist_ok=True)
