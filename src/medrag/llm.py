@@ -10,6 +10,23 @@ class LLMError(RuntimeError):
     pass
 
 
+def sse_delta(line: str) -> str | None:
+    """Bir SSE satırından metin parçasını çıkarır; ilgisiz satır, [DONE] ve boş 'choices' için None."""
+    line = line.strip()
+    if not line.startswith("data:"):
+        return None
+    body = line[5:].strip()
+    if not body or body == "[DONE]":
+        return None
+    try:
+        choices = json.loads(body).get("choices") or []  # son parça (usage) 'choices' boş gelebilir
+    except (ValueError, AttributeError):
+        return None
+    if not choices:
+        return None
+    return (choices[0].get("delta") or {}).get("content") or None
+
+
 class EvrenLLM:
     """OpenAI uyumlu /chat/completions istemcisi (Evren API). Anahtar EVREN_API_KEY'den okunur."""
 
@@ -92,13 +109,7 @@ class EvrenLLM:
         try:
             with urllib.request.urlopen(self._request(payload), timeout=180) as resp:
                 for raw in resp:
-                    line = raw.decode("utf-8").strip()
-                    if not line.startswith("data:"):
-                        continue
-                    body = line[5:].strip()
-                    if body == "[DONE]":
-                        return
-                    delta = json.loads(body)["choices"][0].get("delta", {}).get("content")
+                    delta = sse_delta(raw.decode("utf-8"))
                     if delta:
                         yield delta
         except urllib.error.HTTPError as e:

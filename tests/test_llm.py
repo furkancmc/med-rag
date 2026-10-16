@@ -1,6 +1,6 @@
 import pytest
 
-from medrag.llm import EvrenLLM, LLMError
+from medrag.llm import EvrenLLM, LLMError, sse_delta
 
 
 def make(response):
@@ -40,3 +40,13 @@ def test_error_mentions_refusal_and_model():
 def test_malformed_response():
     with pytest.raises(LLMError):
         make({"oops": 1}).complete([{"role": "user", "content": "x"}])
+
+
+def test_sse_delta_handles_all_chunk_shapes():
+    assert sse_delta('data: {"choices": [{"delta": {"content": "Merhaba"}}]}') == "Merhaba"
+    assert sse_delta('data: {"choices": [{"delta": {"role": "assistant"}}]}') is None
+    # son parça: kullanım bilgisi, 'choices' boş
+    assert sse_delta('data: {"choices": [], "usage": {"total_tokens": 5}}') is None
+    assert sse_delta("data: [DONE]") is None
+    assert sse_delta(": keep-alive") is None
+    assert sse_delta("data: {bozuk json") is None

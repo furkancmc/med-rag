@@ -11,16 +11,19 @@ tıbbi uyarı eklenir.
 ## Nasıl çalışır
 
 ```
-soru ──► acil durum kontrolü ──► hybrid arama ──► prompt ──► Evren LLM ──► akan cevap + kaynaklar
-          (kural tabanlı)         BM25 + Qwen3      kaynak     (SSE)
-                                  vektör, RRF       atıfı
+soru ──► acil durum kontrolü ──► vektör arama ──► prompt ──► Evren LLM ──► akan cevap + kaynaklar
+          (kural tabanlı)         (Qwen3)          kaynak     (SSE)
+                                                   atıfı
 ```
 
 - **Veri:** MedlinePlus (İngilizce, kamu malı, 1.017 konu) ve elle seçilmiş Vikipedi makaleleri
   (Türkçe ve İngilizce, CC BY-SA). Kaynak ve lisans her parçada saklanır. Kendi `.txt`/`.md`
   dosyalarını `data/local/` altına koyabilirsin.
-- **Arama:** BM25 (Türkçe için aksansız, ilk 5 harfe kökleme) ve `qwen3-embedding-8b` vektörleri,
-  sıralamalar RRF ile birleştirilir. Türkçe soru İngilizce kaynağı da bulabilir.
+- **Arama:** `qwen3-embedding-8b` vektörleri. Türkçe soru İngilizce kaynağı da bulabilir.
+  150 test sorusunda doğru doküman ilk 5'te %85, ilk 10'da %94 oranında bulundu (`eval/results.md`).
+  BM25 tek başına %46, BM25 ile birleştirme (hybrid) vektörden daha kötü çıktığı için kullanılmıyor;
+  kodu (`Retriever.search(mode="hybrid")`) duruyor. Test soruları LLM ile yazıldığı için gerçek kullanıcı
+  sorularından farklı olabilir.
 - **Cevap:** Evren API'deki sohbet modeli (`model: auto`).
 
 ## Kurulum ve çalıştırma

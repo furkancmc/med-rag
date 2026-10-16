@@ -11,8 +11,10 @@ from .index.tokenize import tokenize
 from .ingest.build import build_chunks
 
 RRF_K = 60  # sıralama birleştirmede standart sabit
-# Ölçümde BM25 tek başına zayıf (Türkçe soru, İngilizce kaynak): vektöre göre düşük ağırlık verilir.
-DEFAULT_BM25_WEIGHT = 0.3
+# Ölçüm (eval/results.md, 150 soru): vektör recall@5 0.85; BM25 0.46; hybrid her ağırlıkta vektörden
+# kötü (en iyisi 0.05 ağırlıkla 0.81). Bu yüzden varsayılan yöntem vektör. Hybrid isteğe bağlı kalır.
+DEFAULT_MODE = "vector"
+DEFAULT_BM25_WEIGHT = 0.05
 
 
 @dataclass
@@ -45,7 +47,7 @@ class Retriever:
         self,
         query: str,
         k: int = 5,
-        mode: str = "hybrid",
+        mode: str = DEFAULT_MODE,
         pool: int = 50,
         bm25_weight: float = DEFAULT_BM25_WEIGHT,
     ) -> list[Hit]:

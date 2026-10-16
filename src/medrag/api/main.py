@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from medrag.chat.service import ChatService
 from medrag.config import get_settings
-from medrag.llm import EvrenLLM, LLMError
+from medrag.llm import EvrenLLM
 from medrag.retrieve import load_retriever
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -60,7 +60,7 @@ def create_app(service: ChatService | None = None) -> FastAPI:
             try:
                 for ev in get_service().stream(req.message, history):
                     yield sse(ev)
-            except (LLMError, RuntimeError, OSError) as e:
+            except Exception as e:  # noqa: BLE001 - akış ortada kopmasın, kullanıcı temiz bir hata görsün
                 yield sse({"type": "error", "text": "Şu an cevap veremiyorum, lütfen biraz sonra tekrar deneyin."})
                 print(f"chat hatası: {type(e).__name__}: {e}")
 
