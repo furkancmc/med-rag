@@ -4,12 +4,14 @@ version = "0.1.0"
 description = "Tıbbi dokümanlar üzerinde RAG ile sohbet asistanı"
 requires-python = ">=3.11"
 dependencies = [
+    "fastapi>=0.110",
     "numpy>=1.26",
     "pydantic-settings>=2.2",
+    "uvicorn>=0.29",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5"]
+dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -24,3 +26,6 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+
+[tool.setuptools.package-data]
+medrag = ["web/*.html"]
