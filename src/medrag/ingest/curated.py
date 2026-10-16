@@ -5,7 +5,7 @@ Başlıklar Vikipedi'deki sayfa adlarıdır. Yönlendirmeler (redirect) otomatik
 takip edilir. Bulunamayan başlıklar indirme sırasında raporlanır.
 """
 
-CURATED: list[tuple[str | None, str]] = [
+_BASE: list[tuple[str | None, str]] = [
     # Metabolik ve endokrin
     ("Diyabet", "Diabetes"),
     ("Gestasyonel diyabet", "Gestational diabetes"),
@@ -195,6 +195,28 @@ CURATED: list[tuple[str | None, str]] = [
     ("Beden kitle indeksi", "Body mass index"),
     ("Sigara", "Tobacco smoking"),
 ]
+
+
+def _combine() -> list[tuple[str | None, str]]:
+    """Temel + ek liste; İngilizce başlık yinelenirse atlanır, Türkçe yinelenirse None yapılır."""
+    from .curated_extra import EXTRA
+
+    out = list(_BASE)
+    seen_en = {en.casefold() for _, en in out}
+    seen_tr = {tr.casefold() for tr, _ in out if tr}
+    for tr, en in EXTRA:
+        if en.casefold() in seen_en:
+            continue
+        seen_en.add(en.casefold())
+        if tr and tr.casefold() in seen_tr:
+            tr = None
+        if tr:
+            seen_tr.add(tr.casefold())
+        out.append((tr, en))
+    return out
+
+
+CURATED: list[tuple[str | None, str]] = _combine()
 
 
 def curated_titles(lang: str) -> list[str]:

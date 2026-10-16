@@ -1,19 +1,22 @@
+"""MedlinePlus ve Vikipedi indirmeleri (yeni kaynaklar kendi modüllerinde: europepmc, openfda, nihods)."""
+
 import json
 import re
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-USER_AGENT = "medrag/0.1 (https://github.com/furkancmc/phone; egitim amacli RAG projesi)"
-WIKI_DELAY = 0.3  # her bağlantı kendi isteğinden önce bu kadar bekler
-WIKI_WORKERS = 3  # paralel bağlantı sayısı; 429 gelirse http_get zaten bekleyip tekrar dener
+from .net import USER_AGENT, RateLimiter, describe_error, http_get, run_parallel
+from .rawstore import MergeStats, save_merged
+from .report import SourceReport
+from .textutil import iso_date, today_iso
+
+WIKI_WORKERS = 4  # paralel bağlantı sayısı
+WIKI_RATE = 8.0  # saniyede en fazla bu kadar istek (tüm bağlantılar toplamı)
 MEDLINE_INDEX = "https://medlineplus.gov/xml.html"
-MEDLINE_TOPICS = re.compile(r'href="([^"]*mplus_topics_\d{4}-\d{2}-\d{2}\.xml)"')
+MEDLINE_TOPICS = re.compile(r'href="([^"]*mplus_topics_(\d{4}-\d{2}-\d{2})\.xml)"')
 
 # Varsayılan Vikipedi kategorileri (adlar GitHub Actions'ta arama ile doğrulandı)
 DEFAULT_CATEGORIES = {
@@ -21,34 +24,20 @@ DEFAULT_CATEGORIES = {
     "en": ["Category:Diseases and disorders"],
 }
 
-
-def http_get(url: str, retries: int = 5) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    for attempt in range(retries):
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                return resp.read()
-        except urllib.error.HTTPError as e:
-            retryable = e.code == 429 or e.code >= 500
-            if not retryable or attempt == retries - 1:
-                raise
-            wait = e.headers.get("Retry-After", "")
-            time.sleep(int(wait) if wait.isdigit() else 5 * 2**attempt)
-        except OSError:
-            if attempt == retries - 1:
-                raise
-            time.sleep(2**attempt)
-    raise RuntimeError("ulaşılamaz")
+_wiki_limiter = RateLimiter(WIKI_RATE)
 
 
 def wiki_get(url: str) -> bytes:
-    time.sleep(WIKI_DELAY)
+    _wiki_limiter.wait()
     return http_get(url)
+
+
+# --- MedlinePlus ---
 
 
 def find_medlineplus_urls(index_html: str) -> list[str]:
     urls = []
-    for href in MEDLINE_TOPICS.findall(index_html):
+    for href, _date in MEDLINE_TOPICS.findall(index_html):
         full = urllib.parse.urljoin(MEDLINE_INDEX, href)
         if full not in urls:
             urls.append(full)
@@ -74,28 +63,63 @@ def medlineplus_topics_from_xml(xml_bytes: bytes, languages: tuple[str, ...]) ->
     return rows
 
 
-def download_medlineplus(
+def download_medlineplus_report(
     raw_dir: Path,
     get: Callable[[str], bytes] = http_get,
     languages: tuple[str, ...] = ("English",),
-) -> Path:
-    """Sayfadaki en güncel 'health topics' XML dosyasını indirip topics.jsonl yazar."""
+    today: str | None = None,
+    limit: int | None = None,
+) -> SourceReport:
+    """Sayfadaki en güncel 'health topics' XML dosyasını indirip topics.jsonl'a birleştirir."""
+    start = time.time()
+    today = today or today_iso()
     index = get(MEDLINE_INDEX).decode("utf-8", errors="replace")
     urls = find_medlineplus_urls(index)
     if not urls:
         raise RuntimeError("MedlinePlus sayfasında topics XML bağlantısı bulunamadı")
     latest = max(urls)  # dosya adlarındaki tarih ISO biçiminde, sıralama doğru çalışır
+    version = iso_date(latest.rsplit("_", 1)[-1].removesuffix(".xml"))
     rows = medlineplus_topics_from_xml(get(latest), languages)
     if not rows:
         raise RuntimeError(f"{latest} içinde {languages} dilinde konu bulunamadı")
-    out_dir = raw_dir / "medlineplus"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / "topics.jsonl"
-    with path.open("w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    print(f"{latest}: {len(rows)} konu yazıldı")
-    return path
+    if limit:
+        rows = rows[:limit]
+    for row in rows:
+        row["published"] = version  # konu metninin bu sürümde yayımlandığı tarih
+    path = raw_dir / "medlineplus" / "topics.jsonl"
+    stats = save_merged(
+        path,
+        rows,
+        key=lambda r: f"{r['language']}-{r['id']}",
+        content_keys=("title", "url", "summary_html"),
+        today=today,
+    )
+    report = SourceReport(
+        "medlineplus",
+        path=path,
+        requested=len(rows),
+        fetched=len(rows),
+        documents=stats.added + stats.updated + stats.unchanged + stats.kept,
+        stats=stats,
+        samples=[r["title"] for r in rows[:8]],
+        notes=[f"kaynak dosya: {latest.rsplit('/', 1)[-1]}"],
+        seconds=time.time() - start,
+    )
+    return report
+
+
+def download_medlineplus(
+    raw_dir: Path,
+    get: Callable[[str], bytes] = http_get,
+    languages: tuple[str, ...] = ("English",),
+    today: str | None = None,
+) -> Path:
+    report = download_medlineplus_report(raw_dir, get, languages, today)
+    print(report.render())
+    return report.path or raw_dir
+
+
+# --- Vikipedi ---
 
 
 def wiki_api(lang: str, params: dict) -> str:
@@ -140,24 +164,57 @@ def category_titles(
     return list(dict.fromkeys(titles))[:limit]
 
 
-def fetch_extracts(
-    lang: str, titles: list[str], get: Callable[[str], bytes] = wiki_get
-) -> list[dict]:
-    """Tam metin (intro dışı) için Vikipedi sayfa başına tek istek kabul ediyor."""
+def _page_row(page: dict) -> dict:
+    """API sayfasını ham satıra çevirir; son düzenleme zamanı `published` olur."""
+    revisions = page.get("revisions") or [{}]
+    return {
+        "pageid": page.get("pageid"),
+        "ns": page.get("ns", 0),
+        "title": page.get("title", ""),
+        "extract": page.get("extract") or "",
+        "published": iso_date(revisions[0].get("timestamp", "")),
+    }
+
+
+def fetch_extracts_detailed(
+    lang: str,
+    titles: list[str],
+    get: Callable[[str], bytes] = wiki_get,
+    workers: int = WIKI_WORKERS,
+) -> tuple[list[dict], list[tuple[str, str]]]:
+    """Başlık başına tek istek (tam metin için Vikipedi sayfa başına tek istek kabul ediyor).
+
+    Bir başlığın hatası diğerlerini durdurmaz. Döner: (sayfalar, [(başlık, hata])).
+    """
 
     def fetch_one(title: str) -> list[dict]:
         params = {
             "action": "query",
-            "prop": "extracts",
+            "prop": "extracts|revisions",
             "explaintext": "1",
+            "rvprop": "timestamp",
             "redirects": "1",
             "titles": title,
         }
         data = json.loads(get(wiki_api(lang, params)))
         return data.get("query", {}).get("pages", [])
 
-    with ThreadPoolExecutor(max_workers=WIKI_WORKERS) as pool:
-        return [page for pages in pool.map(fetch_one, titles) for page in pages]
+    pages, failed = [], []
+    for out in run_parallel(fetch_one, titles, workers, label=f"vikipedi-{lang}"):
+        if out.error:
+            failed.append((out.item, describe_error(out.error)))
+        else:
+            pages.extend(out.value)
+    return pages, failed
+
+
+def fetch_extracts(
+    lang: str, titles: list[str], get: Callable[[str], bytes] = wiki_get
+) -> list[dict]:
+    pages, failed = fetch_extracts_detailed(lang, titles, get)
+    if failed and not pages:
+        raise RuntimeError(f"hiçbir başlık alınamadı; ilk hata: {failed[0][1]}")
+    return pages
 
 
 def search_categories(lang: str, query: str, get: Callable[[str], bytes] = wiki_get) -> list[str]:
@@ -173,6 +230,70 @@ def search_categories(lang: str, query: str, get: Callable[[str], bytes] = wiki_
     return [r["title"] for r in data.get("query", {}).get("search", [])]
 
 
+def download_wikipedia_report(
+    raw_dir: Path,
+    lang: str,
+    categories: list[str] | None = None,
+    limit: int | None = 500,
+    depth: int = 1,
+    get: Callable[[str], bytes] = wiki_get,
+    titles: list[str] | None = None,
+    today: str | None = None,
+    prune: bool = False,
+    workers: int = WIKI_WORKERS,
+) -> SourceReport:
+    """Verilen başlıkları ya da kategorilerdeki makaleleri indirip `<lang>.jsonl`'a birleştirir.
+
+    `prune=True` (yalnız tam çalışmada): bu çalışmada alınmayan eski satırlar silinir.
+    """
+    start = time.time()
+    today = today or today_iso()
+    if titles is None:
+        titles = []
+        for cat in categories or []:
+            titles += category_titles(lang, cat, get=get, depth=depth, limit=limit or 500)
+        titles = list(dict.fromkeys(titles))[: limit or 500]
+    elif limit:
+        titles = titles[:limit]
+    if not titles:
+        raise RuntimeError(f"{lang} için indirilecek makale bulunamadı: {categories}")
+    print(f"{lang}: {len(titles)} başlık isteniyor", flush=True)
+    pages, failed = fetch_extracts_detailed(lang, titles, get=get, workers=workers)
+
+    kept, seen, missing = [], set(), []
+    for page in pages:
+        if "missing" in page or not (page.get("extract") or "").strip():
+            missing.append(page.get("title", "?"))
+        elif page["pageid"] not in seen:  # iki başlık aynı sayfaya yönlenebilir
+            seen.add(page["pageid"])
+            kept.append(_page_row(page))
+    if not kept:
+        detail = failed[0][1] if failed else "tüm sayfalar boş/bulunamadı"
+        raise RuntimeError(f"{lang}: hiç makale alınamadı ({detail})")
+
+    path = raw_dir / "wikipedia" / f"{lang}.jsonl"
+    stats: MergeStats = save_merged(
+        path,
+        kept,
+        key="pageid",
+        content_keys=("title", "extract"),
+        today=today,
+        drop_old=(lambda _row: True) if prune else None,
+    )
+    return SourceReport(
+        f"wikipedia-{lang}",
+        path=path,
+        requested=len(titles),
+        fetched=len(kept),
+        documents=stats.added + stats.updated + stats.unchanged + stats.kept,
+        missing=missing,
+        failed=failed,
+        stats=stats,
+        samples=[r["title"] for r in kept[:8]],
+        seconds=time.time() - start,
+    )
+
+
 def download_wikipedia(
     raw_dir: Path,
     lang: str,
@@ -182,32 +303,28 @@ def download_wikipedia(
     get: Callable[[str], bytes] = wiki_get,
     titles: list[str] | None = None,
 ) -> Path:
-    """Verilen başlıkları ya da kategorilerdeki makaleleri indirir."""
-    if titles is None:
-        titles = []
-        for cat in categories or []:
-            titles += category_titles(lang, cat, get=get, depth=depth, limit=limit)
-        titles = list(dict.fromkeys(titles))[:limit]
-    if not titles:
-        raise RuntimeError(f"{lang} için indirilecek makale bulunamadı: {categories}")
-    print(f"{lang}: {len(titles)} başlık isteniyor")
-    pages = fetch_extracts(lang, titles, get=get)
+    """Geriye uyumlu sarmalayıcı: raporu yazdırır, ham dosyanın yolunu döner."""
+    report = download_wikipedia_report(
+        raw_dir, lang, categories, None if titles is not None else limit, depth, get, titles
+    )
+    print(report.render())
+    return report.path or raw_dir
 
-    kept, seen, missing = [], set(), []
-    for page in pages:
-        if "missing" in page or not (page.get("extract") or "").strip():
-            missing.append(page.get("title", "?"))
-        elif page["pageid"] not in seen:  # iki başlık aynı sayfaya yönlenebilir
-            seen.add(page["pageid"])
-            kept.append(page)
-    print(f"{lang}: {len(kept)} makale alındı, {len(missing)} bulunamadı")
-    if missing:
-        print("bulunamayanlar:", "; ".join(missing))
 
-    out_dir = raw_dir / "wikipedia"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"{lang}.jsonl"
-    with path.open("w", encoding="utf-8") as f:
-        for page in kept:
-            f.write(json.dumps(page, ensure_ascii=False) + "\n")
-    return path
+__all__ = [
+    "DEFAULT_CATEGORIES",
+    "USER_AGENT",
+    "category_titles",
+    "download_medlineplus",
+    "download_medlineplus_report",
+    "download_wikipedia",
+    "download_wikipedia_report",
+    "fetch_extracts",
+    "fetch_extracts_detailed",
+    "find_medlineplus_urls",
+    "http_get",
+    "medlineplus_topics_from_xml",
+    "search_categories",
+    "wiki_api",
+    "wiki_get",
+]

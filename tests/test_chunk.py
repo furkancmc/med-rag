@@ -3,6 +3,9 @@ import pytest
 from medrag.ingest.chunk import chunk_document, split_sections
 from medrag.ingest.models import Document
 
+LONG_A = " ".join(f"alfa{i}" for i in range(12))
+LONG_B = " ".join(f"beta{i}" for i in range(12))
+
 
 def make_doc(text):
     return Document("d1", "Başlık", text, "wikipedia", "http://x", "tr", "CC BY-SA 4.0")
@@ -26,7 +29,7 @@ def test_long_section_is_split_with_overlap():
 
 
 def test_chunk_keeps_metadata_and_unique_ids():
-    chunks = chunk_document(make_doc("a b c\n== Bölüm ==\nd e f"))
+    chunks = chunk_document(make_doc(LONG_A + "\n== Bölüm ==\n" + LONG_B))
     assert [c.section for c in chunks] == ["", "Bölüm"]
     assert len({c.id for c in chunks}) == 2
     assert chunks[0].license == "CC BY-SA 4.0"

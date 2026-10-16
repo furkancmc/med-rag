@@ -1,9 +1,17 @@
 name: İndeks oluştur (API)
 
 # qwen3-embedding-8b ile embedding hesaplar, data/index_qwen3 altına commit'ler.
+# Artımlıdır: mevcut indeks önbellek olarak kullanılır, yalnız yeni/değişen parçalar hesaplanır.
 # Sadece elle çalıştırılır. Repo ayarlarında EVREN_API_KEY secret'ı tanımlı olmalı.
 on:
   workflow_dispatch:
+    inputs:
+      full:
+        description: "true = önbelleği yok say, hepsini yeniden hesapla"
+        default: "false"
+      trust_legacy:
+        description: "true = özet dosyası olmayan eski indeksi chunk kimliğiyle devral (ilk geçiş)"
+        default: "false"
 
 permissions:
   contents: write
@@ -19,14 +27,23 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .
       - run: python -m medrag.ingest build
-      - run: python -m medrag.index embed --index-dir data/index_qwen3
+      - name: Embedding (artımlı, 16 paralel istek)
         env:
           EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+          MEDRAG_EMBED_WORKERS: "16"
+          PYTHONUNBUFFERED: "1"
+          FULL: ${{ github.event.inputs.full }}
+          TRUST_LEGACY: ${{ github.event.inputs.trust_legacy }}
+        run: |
+          args=(--index-dir data/index_qwen3)
+          if [ "$FULL" = "true" ]; then args+=(--full); fi
+          if [ "$TRUST_LEGACY" = "true" ]; then args+=(--trust-legacy); fi
+          python -m medrag.index embed "${args[@]}"
       - name: İndeksi commit'le
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -f data/index_qwen3
-          git commit -m "Qwen3 embedding indeksi oluşturuldu" || exit 0
+          git commit -m "Qwen3 embedding indeksi güncellendi" || exit 0
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"

@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     index_dir: Path = Path("data/index_qwen3")
 
     # --- Veri (iş akışı B) ---
+    embed_batch_size: int = 64  # istek başına metin
+    embed_workers: int = 16  # paralel embedding isteği
+    index_max_float16_mb: int = 40  # float16 bunu aşacaksa int8 sakla
+    europepmc_per_topic: int = 3  # Europe PMC: konu başına makale
 
     # --- Sohbet ve güvenlik (iş akışı C) ---
     llm_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
