@@ -1,0 +1,15 @@
+/* Hakkında sayfası */
+.about-hero { text-align: left; }
+.about-hero p { margin: 0; }
+.two-col { display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
+@media (min-width: 560px) { .two-col { grid-template-columns: 1fr 1fr; } }
+.do-list, .dont-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.do-list li, .dont-list li { position: relative; padding-left: 26px; }
+.do-list li::before, .dont-list li::before { position: absolute; left: 0; top: 0; font-weight: 800; }
+.do-list li::before { content: "✓"; color: var(--ok); }
+.dont-list li::before { content: "✕"; color: var(--danger); }
+.layers { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--sp-3); }
+.stat { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--sp-3); }
+.stat b { display: block; font-size: var(--fs-xl); color: var(--accent-ink); }
+.about-foot { text-align: center; }
