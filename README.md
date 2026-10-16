@@ -1,228 +1,276 @@
 # medrag — Türkçe Sağlık Bilgi Asistanı
 
-Açık tıbbi kaynaklar üzerinde çalışan, Türkçe sohbet eden bir **RAG** (kaynaktan cevap üreten) asistanı.
-Soruyu alır, ilgili kaynak parçalarını bulur, cevabı **yalnızca bu kaynaklara dayanarak** yazar ve
-`[1] [2]` gibi atıflarla kaynakları gösterir. Telefonda açılan bir sohbet sayfası ile gelir.
+Açık tıbbi kaynaklar üzerinde çalışan, Türkçe konuşan bir **RAG** (kaynaktan cevap üreten) sağlık bilgi asistanı.
+Soruyu alır, ilgili kaynak parçalarını bulur, cevabı **yalnızca bu kaynaklara dayanarak** yazar, `[1] [2]`
+atıflarıyla kaynakları gösterir ve cevabı yayınlamadan önce kaynaklarla yeniden kontrol eder.
 
-> **Bu bir doktor değildir.** Teşhis koymaz, ilaç ya da doz önermez. Acil belirtilerde cevaptan önce
-> 112'ye yönlendirir. Her cevabın sonunda tıbbi uyarı vardır. Ayrıntı için [Güvenlik tasarımı](#güvenlik-tasarımı).
+Sohbetin yanında iki ayrı modül vardır: kısa sorularla **aciliyet değerlendirmesi** (belirti) ve **tahlil sonucu
+yorumlama** (değerleri girerek ya da sonuç kâğıdının fotoğrafını çekerek). Hepsi telefonda açılan, ana ekrana
+eklenebilen tek bir arayüzdedir.
 
-| Normal soru | Acil durum | İlaç dozu sorusu |
-|---|---|---|
-| <img src="docs/screens/normal-light.png" width="240"> | <img src="docs/screens/acil-light.png" width="240"> | <img src="docs/screens/doz-light.png" width="240"> |
+> **Bu bir doktor değildir.** Teşhis koymaz, ilaç ya da doz önermez. Acil belirtilerde cevaptan önce 112'ye
+> yönlendirir. Tıbbi bilgiler genel bilgilendirme amaçlıdır. Ayrıntı: [Güvenlik tasarımı](#10-güvenlik-tasarımı).
 
-Görüntüler gerçek uygulamadan, telefon genişliğinde (390 px) alınmıştır. Koyu tema da vardır
-(`docs/screens/*-dark.png`).
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ui/sohbet-karsilama.png" width="200"><br><sub>Sohbet</sub></td>
+    <td align="center"><img src="docs/screens/ui/sohbet-kaynakli-cevap.png" width="200"><br><sub>Kaynaklı cevap</sub></td>
+    <td align="center"><img src="docs/screens/ui/sohbet-acil.png" width="200"><br><sub>Acil durum</sub></td>
+    <td align="center"><img src="docs/screens/ui/sohbet-dogrulama.png" width="200"><br><sub>Doğrulama işareti</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ui/belirti-1-sikayet.png" width="200"><br><sub>Belirti: şikâyet</sub></td>
+    <td align="center"><img src="docs/screens/ui/belirti-2-soru.png" width="200"><br><sub>Belirti: sorular</sub></td>
+    <td align="center"><img src="docs/screens/ui/tahlil-1-giris.png" width="200"><br><sub>Tahlil: değer girişi</sub></td>
+    <td align="center"><img src="docs/screens/ui/sohbet-koyu-tema.png" width="200"><br><sub>Koyu tema</sub></td>
+  </tr>
+</table>
+
+> **Görüntüler hakkında dürüst not:** Bu görüntüler gerçek arayüzden, telefon genişliğinde (390 px) ve
+> `scripts/dev_server.py` ile alındı. Sohbet cevapları sahte servistendir (kaynaksız/örnek metin), belirti
+> sayfasındaki sorular ve sonuç örnek yanıttır. Bu yüzden görüntüler *arayüzü* gösterir, modelin gerçek cevap
+> kalitesini göstermez. Gerçek API ile alınmış (eski arayüz) görüntüler [Faz 1 görüntüleri](#faz-1-görüntüleri-gerçek-api)
+> bölümündedir.
+
+---
 
 ## İçindekiler
 
-1. [Özellikler](#özellikler)
-2. [Nasıl çalışır](#nasıl-çalışır)
-3. [Hızlı başlangıç](#hızlı-başlangıç)
-4. [Yapılandırma](#yapılandırma)
-5. [API](#api)
-6. [Veri kaynakları ve lisanslar](#veri-kaynakları-ve-lisanslar)
-7. [Veriyi yenileme ve workflow'lar](#veriyi-yenileme-ve-workflowlar)
-8. [Güvenlik tasarımı](#güvenlik-tasarımı)
-9. [Değerlendirme ve sonuçlar](#değerlendirme-ve-sonuçlar)
-10. [Dizin yapısı](#dizin-yapısı)
-11. [Geliştirme](#geliştirme)
-12. [Sorun giderme](#sorun-giderme)
-13. [Sınırlar](#sınırlar)
-14. [Yol haritası](#yol-haritası)
-15. [Değişiklik günlüğü](#değişiklik-günlüğü)
+1. [Proje durumu: neler hazır, neler ertelendi](#1-proje-durumu-neler-hazır-neler-ertelendi)
+2. [Özellikler ve sayfalar](#2-özellikler-ve-sayfalar)
+3. [Mimari](#3-mimari)
+4. [Teknoloji ve model seçimleri (ve nedenleri)](#4-teknoloji-ve-model-seçimleri-ve-nedenleri)
+5. [Veri kaynakları: nereden aldık, neden bunları seçtik](#5-veri-kaynakları-nereden-aldık-neden-bunları-seçtik)
+6. [Veri hattı ve indeks](#6-veri-hattı-ve-indeks)
+7. [Arama: ölçümler ve kararlar](#7-arama-ölçümler-ve-kararlar)
+8. [Sohbet servisi](#8-sohbet-servisi)
+9. [Belirti değerlendirme ve tahlil yorumu](#9-belirti-değerlendirme-ve-tahlil-yorumu)
+10. [Güvenlik tasarımı](#10-güvenlik-tasarımı)
+11. [Arayüz ve PWA](#11-arayüz-ve-pwa)
+12. [Sunucu, dağıtım ve Docker](#12-sunucu-dağıtım-ve-docker)
+13. [Hızlı başlangıç](#13-hızlı-başlangıç)
+14. [Yapılandırma](#14-yapılandırma)
+15. [API başvurusu](#15-api-başvurusu)
+16. [Workflow'lar (GitHub Actions)](#16-workflowlar-github-actions)
+17. [Nasıl geliştirdik: süreç ve alınan kararlar](#17-nasıl-geliştirdik-süreç-ve-alınan-kararlar)
+18. [Test ve kalite](#18-test-ve-kalite)
+19. [Maliyet notları](#19-maliyet-notları)
+20. [Bilinen sınırlar](#20-bilinen-sınırlar)
+21. [Sorun giderme](#21-sorun-giderme)
+22. [Dizin yapısı](#22-dizin-yapısı)
+23. [Yasal uyarı ve lisanslar](#23-yasal-uyarı-ve-lisanslar)
+24. [Değişiklik günlüğü](#24-değişiklik-günlüğü)
 
-## Özellikler
+---
 
-- **Kaynaklı cevap:** Her bilgi cümlesi bir kaynağa bağlanır; cevabın altında kaynak listesi (başlık, bağlantı,
-  lisans) açılır.
-- **Çok dilli arama:** Türkçe soru, İngilizce kaynakları da bulur (MedlinePlus İngilizcedir). Cevap her zaman Türkçedir.
-- **Canlı akan cevap:** Sunucu cevabı parça parça (SSE) gönderir; telefonda beklemeden okunmaya başlar.
-- **Acil durum yönlendirmesi:** Göğüs ağrısı, felç belirtisi, nefes alamama, bilinç kaybı, ağır kanama, zehirlenme,
-  ciddi alerji, nöbet ve kendine zarar verme ifadelerinde 112 uyarısı en başta çıkar.
-- **İlaç dozu filtresi:** Kaynakta yazsa bile doz içeren cümleler cevaptan çıkarılır.
-- **Takip soruları:** Konuşma geçmişi kullanılır; "Belirtileri neler?" gibi eksik sorular önce tek başına
-  anlaşılır bir arama sorgusuna çevrilir.
-- **Telefona uygun arayüz:** Tek dosya, koyu/açık tema, yatay kaydırma yok. Tarayıcıdan ana ekrana kısayol olarak eklenebilir.
-- **Ölçülebilir kalite:** Arama ve güvenlik için otomatik değerlendirme (150 soru, 13 güvenlik senaryosu).
-- **Yeniden üretilebilir veri hattı:** Veri indirme, parçalama ve embedding adımlarının hepsi komut ve GitHub
-  Actions workflow'u olarak mevcuttur.
+## 1. Proje durumu: neler hazır, neler ertelendi
 
-## Nasıl çalışır
+Bu tablo, "ne kadarının gerçekten denendiğini" açıkça ayırmak için vardır. **Doğrulandı** = gerçek API ya da
+gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servislerle birim testi yapıldı.
 
-```
-                         ┌────────────────────────── çevrimdışı (veri hattı) ──────────────────────────┐
- MedlinePlus ─┐          │  indir ──► temizle ──► parçala (≈200 kelime) ──► embedding (Qwen3, 1024 boyut) │
- Vikipedi    ─┼─────────►│                                                          │                    │
- data/local  ─┘          └──────────────────────────────────────────────────────────┼────────────────────┘
-                                                                                    ▼
- soru ─► acil durum ─► (takip sorusu ise) ─► vektör arama ─► prompt ─► Evren LLM ─► doz filtresi ─► akan cevap
-         kontrolü       sorgu yeniden yaz     ilk 5 parça    kaynaklar  (SSE)        + uyarı          + kaynak kartları
-```
-
-1. **Parçalama** (`ingest/chunk.py`): Metin başlıklara göre bölünür, uzun bölümler 200 kelimelik, 30 kelime
-   örtüşmeli parçalara ayrılır. Her parça kaynak, bağlantı, dil ve lisansı taşır.
-2. **Embedding** (`index/embed.py`): `qwen3-embedding-8b` ile her parça vektöre çevrilir. Vektör 4096 yerine ilk
-   1024 boyuta kesilip normalize edilir (modelin bu kullanıma uygun eğitimi vardır); depolama 4'te 1'e iner.
-   Sorgularda modelin talimat öneki kullanılır, pasajlarda kullanılmaz.
-3. **Arama** (`retrieve.py`): Soru vektöre çevrilir, kosinüs benzerliği en yüksek 5 parça alınır.
-4. **Cevap** (`chat/service.py`): Parçalar numaralı kaynak olarak prompt'a girer. Model yalnızca bunlara dayanarak
-   yazar. Cevap akarken doz filtresinden geçer, sonuna tıbbi uyarı eklenir.
-
-> BM25 (kelime tabanlı) arama ve ikisini birleştiren *hybrid* arama da kodda durur, ama ölçümde vektör aramadan
-> daha kötü çıktığı için kullanılmaz ([sonuçlar](#değerlendirme-ve-sonuçlar)).
-
-## Hızlı başlangıç
-
-**Gereksinimler:** Python 3.11+, Evren API anahtarı (`EVREN_API_KEY`) ve sunucunun
-`evren-llmapi.ssyz.org.tr` adresine erişimi.
-
-```bash
-git clone https://github.com/furkancmc/phone && cd phone
-git checkout ccr-fc8175dc-sqyb1k
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-
-export EVREN_API_KEY=...        # anahtarı asla repoya yazma
-python -m medrag.api            # http://localhost:8000
-```
-
-İlk açılışta `data/raw` içindeki ham veriden `data/chunks.jsonl` kendiliğinden üretilir (birkaç saniye). Embedding
-indeksi (`data/index_qwen3/`) repoda hazırdır; yeniden hesaplamak gerekmez.
-
-**Telefondan açmak:** Bilgisayar ve telefon aynı Wi-Fi'daysa telefon tarayıcısına
-`http://<bilgisayarın-ip-adresi>:8000` yaz. Tarayıcı menüsünden "Ana ekrana ekle" ile kısayol olarak eklenebilir (henüz tam bir PWA değildir).
-
-**Docker ile:**
-
-```bash
-docker build -t medrag .
-docker run -e EVREN_API_KEY=... -p 8000:8000 medrag
-```
-
-> Dockerfile hazırdır ama geliştirme ortamında Docker çalışmadığı için derlenip denenmedi. Paketin temiz bir
-> kurulumda çalıştığı (web sayfası pakete giriyor, indeks yükleniyor) ayrıca doğrulandı.
-
-## Yapılandırma
-
-Ayarlar ortam değişkenleri ya da `.env` dosyasıyla verilir (`.env.example` örnektir). Önek `MEDRAG_` dır.
-
-| Değişken | Varsayılan | Anlamı |
+| Alan | Durum | Not |
 |---|---|---|
-| `EVREN_API_KEY` | — | **Zorunlu.** Embedding ve sohbet API'si anahtarı. Önek almaz, `.env`'ye de yazılmamalı |
-| `MEDRAG_DATA_DIR` | `data` | Ham veri, `chunks.jsonl` ve `local/` klasörünün yeri |
-| `MEDRAG_INDEX_DIR` | `data/index_qwen3` | Embedding indeksinin yeri (`vectors.npy`, `ids.json`, `meta.json`) |
-| `MEDRAG_TOP_K` | `5` | Cevap için kullanılacak kaynak parçası sayısı |
-| `MEDRAG_EMBED_API_URL` | `https://evren-llmapi.ssyz.org.tr/v1` | Embedding servisi (OpenAI uyumlu `/embeddings`) |
-| `MEDRAG_EMBED_API_MODEL` | `qwen3-embedding-8b` | Embedding modeli |
-| `MEDRAG_EMBED_DIMENSIONS` | `1024` | Vektör boyutu. Değişirse indeks yeniden üretilmeli |
-| `MEDRAG_LLM_API_URL` | `https://evren-llmapi.ssyz.org.tr/v1` | Sohbet servisi (OpenAI uyumlu `/chat/completions`) |
-| `MEDRAG_LLM_MODEL` | `auto` | Sohbet modeli (`auto`: servis yönlendirir) |
+| Sohbet (kaynaklı cevap, SSE, atıf) | Doğrulandı | Faz 1'de gerçek API ile 13/13 güvenlik senaryosu geçti |
+| Acil durum + doz filtresi + uyarı | Doğrulandı | Faz 2'de 40 senaryoya çıktı (40/40, yerel BM25 aramayla) |
+| Çalışma anı cevap doğrulama | Doğrulandı (BM25 ile) | 25 cevap doğrulandı, 2 cümle desteksiz işaretlendi |
+| İkinci katman acil sınıflandırıcı (LLM) | Doğrulandı (BM25 ile) | Gerçek vektör aramayla uçtan uca koşturulmadı |
+| Belirti değerlendirme | Doğrulandı | 19 senaryo (deepseek-v4.1-flash). Çocuk ateşi kuralı sonradan sıkılaştırıldı, tam set yeniden koşulmadı |
+| Tahlil yorumu (kural tabanlı sınıflandırma) | Testle + tarayıcıda | 34 test için referans tablosu |
+| Tahlil fotoğrafı okuma (OCR) | Kısmen | Yalnızca temiz sentetik görselle denendi; gerçek telefon fotoğrafı ölçülmedi |
+| Arayüz (4 sayfa, PWA, tema) | Doğrulandı | Microsoft Edge, 390 px, açık/koyu: JS hatası yok, yatay kaydırma yok |
+| Docker imajı | Doğrulandı | Derlendi, konteyner `healthy`, root olmayan kullanıcı, tüm sayfalar 200 |
+| Sunucu sertleştirme (hız sınırı, erişim kodu, CSP) | Testle | Çok işçili çalışmada sayaçlar işçi başınadır |
+| Ses tanıma (`qwen3-asr-1.7b`) | **Doğrulanmadı** | Uç nokta ve iki istek biçimi hazır; gerçek ses ile denenmedi (seçenek olarak duruyor) |
+| Reranker (`qwen3-reranker-8b`) | Kod hazır, **kapalı** | Küçük örnekte işe yaradı; masraf nedeniyle varsayılan kapalı, tam ölçüm ertelendi |
+| Çoklu sorgu genişletme | Kod hazır, kapalı | Ölçülene kadar kapalı |
+| Yeni veri (~32.7 bin parça) | **İndekse girmedi** | Çekildi ve parçalandı ama embedding'i hesaplanmadı (masraf) |
 
-## API
+**Bilerek ertelenenler (masraf):** yeni verilerin embedding'i (indeks yeniden kurulumu), reranker ve arama
+ölçümü, gerçek vektör aramayla uçtan uca testler. Ayrıntı: [Maliyet notları](#19-maliyet-notları).
 
-| Uç nokta | Ne yapar |
-|---|---|
-| `GET /` | Sohbet sayfası |
-| `GET /health` | `{"status": "ok", "ready": false}`. `ready`, indeks ilk istekte yüklenince `true` olur |
-| `POST /chat` | Soruyu alır, cevabı **SSE** akışı olarak döner |
+---
 
-**İstek**
+## 2. Özellikler ve sayfalar
 
-```json
-{
-  "message": "Diyabetin belirtileri nelerdir?",
-  "history": [
-    {"role": "user", "content": "..."},
-    {"role": "assistant", "content": "..."}
-  ]
-}
+| Sayfa | Adres | Ne yapar |
+|---|---|---|
+| **Sohbet** | `/` | Soruya kaynaklı, Türkçe, akan cevap; kaynak kartları (lisans ve tarihle), `[n]` atıfları, "kaynakta doğrulanamadı" işaretleri, 👍/👎, kopyala, sesli oku, sesle soru sor |
+| **Belirti Değerlendirme** | `/assess` | Ana şikâyet → en fazla 5 hedefli soru → aciliyet seviyesi (112 / bugün hekim / birkaç gün içinde randevu / evde izle), gerekçe ve kırmızı bayraklar |
+| **Tahlil Yorumu** | `/labs` | Değerleri girerek ya da fotoğraftan okuyarak düşük/normal/yüksek/kritik sınıflandırma; kaynaklı açıklama; ilaç kutusu fotoğrafından ilaç adı okuma |
+| **Hakkında** | `/about` | Ne yapar/yapmaz, nasıl çalışır, kaynaklar ve lisanslar, güvenlik katmanları, KVKK notu |
+
+Ortak özellikler:
+
+- **Kaynaklı cevap:** Her bilgi cümlesi bir kaynağa bağlanır; kaynak kartında başlık, kaynak adı, lisans, yayın ve
+  çekilme tarihi, bağlantı bulunur.
+- **Çok dilli arama:** Türkçe soru İngilizce kaynakları da bulur (MedlinePlus ve kaynakların çoğu İngilizcedir).
+  Cevap her zaman Türkçedir.
+- **Canlı akan cevap:** Sunucu cevabı parça parça (SSE) gönderir.
+- **Çalışma anı doğrulama:** Cevap bittikten sonra cümleler kaynaklarla karşılaştırılır; desteklenmeyenler noktalı
+  altı çizgiyle işaretlenir, desteklenmişse "Kaynaklarla kontrol edildi" rozeti çıkar.
+- **Acil durum yönlendirmesi:** İki katmanlı (kurallar + LLM sınıflandırıcı); model çağrılmadan önce 112 uyarısı.
+- **Doz filtresi:** Kaynakta yazsa bile doz içeren cümleler (rakamla ya da yazıyla) cevaptan çıkarılır.
+- **Telefona uygun, PWA:** Alt gezinme çubuğu, koyu/açık tema, ana ekrana eklenebilir, çevrimdışı yedek sayfası.
+- **Gizlilik:** Hesap yok. Görseller ve sesler yalnızca istek süresince bellekte işlenir, saklanmaz. Sohbet geçmişi
+  yalnızca kullanıcının tarayıcısında durur. Geri bildirim IP tutulmadan kaydedilir.
+
+---
+
+## 3. Mimari
+
+<p align="center"><img src="docs/img/mimari.svg" alt="medrag mimari şeması" width="100%"></p>
+
+Bir sohbet isteğinin yolu:
+
+```mermaid
+sequenceDiagram
+    participant K as Kullanıcı (tarayıcı)
+    participant S as Sunucu (FastAPI)
+    participant T as Güvenlik katmanı 1
+    participant R as Arama (vektör)
+    participant L as LLM (deepseek-v4.1-flash)
+    K->>S: POST /chat {message, history}
+    par aynı anda
+        S->>T: acil durum kuralları + LLM sınıflandırıcı
+    and
+        S->>R: takip sorusunu yeniden yaz, vektör arama (ilk 5)
+    end
+    alt acil / kendine zarar
+        S-->>K: emergency olayı (ilk token'dan önce) [+ sabit güvenli yanıt]
+    end
+    S-->>K: sources olayı (kaynak kartları)
+    S->>L: kaynaklar + soru (yalnızca bunlara dayan)
+    L-->>S: cevap akışı
+    S-->>K: token olayları (doz filtresinden geçerek)
+    S->>L: cümleleri kaynaklarla karşılaştır (hakem)
+    S-->>K: verification olayı
+    S-->>K: tıbbi uyarı + done
 ```
 
-`message` 1-2000 karakter; `history` en fazla 20 mesaj, roller yalnızca `user` ve `assistant`. Aksi halde 422 döner.
+Katmanlar arası sözleşmeler (`PLAN.md`): `Retriever.search(query, k)` arayüzü sabittir; yeni uç noktalar
+`api/routes/<ad>.py` içindeki `router` ile, yeni sayfalar `web/<ad>.html` ile otomatik bulunur; bağımlılıklar
+`deps.py` üzerinden tembel yüklenir ve testlerde sahtesiyle değiştirilir.
 
-**Cevap akışı** (`text/event-stream`, her satır `data: {json}`):
+---
 
-| `type` | Alanlar | Ne zaman |
+## 4. Teknoloji ve model seçimleri (ve nedenleri)
+
+### Yazılım
+
+| Parça | Seçim | Neden |
 |---|---|---|
-| `emergency` | `text`, `reasons` | Mesaj acil durum belirtisi içeriyorsa, en başta |
-| `sources` | `items[]`: `n`, `title`, `section`, `url`, `source`, `license`, `snippet`, `text` | Arama bitince, cevaptan önce |
-| `token` | `text` | Cevap parçaları. Son `token` tıbbi uyarıdır |
-| `done` | — | Akış bitti |
-| `error` | `text` | Bir şey ters giderse, kullanıcıya gösterilebilir temiz mesaj |
+| Dil / sürüm | Python 3.11+ (3.12 ile geliştirildi) | Veri ve LLM işleri için pratik; tek dil |
+| Web çatısı | FastAPI + uvicorn | SSE akışı, otomatik doğrulama (pydantic), hafif |
+| Arayüz | Sade (vanilla) JS + CSS, derleme adımı yok | Telefonda hızlı açılır, bağımlılık yok, CSP `'self'` ile uyumlu, dışarıdan font/CDN yok (gizlilik) |
+| Vektör arama | `numpy` ile kosinüs benzerliği (düz dosya) | Bin düzeyindeki parça sayısı için vektör veritabanı gereksiz; dosya repoda durur, kurulum sıfır |
+| HTTP istemcisi | Standart kütüphane `urllib` | Çalışma zamanında ek bağımlılık yok; çok parçalı (multipart) gövdeyi kendimiz kuruyoruz |
+| Ayarlar | `pydantic-settings` (`MEDRAG_` önekli ortam değişkenleri) | Tek yerde, tür denetimli, `.env` destekli |
+| Test / kalite | `pytest`, `ruff` (BLE/PLW gibi ek kurallar açık) | 420 test, LLM ve embedding sahte servislerle |
+| Konteyner | Docker (`python:3.12-slim`), docker-compose | Tek komutla çalışır; root olmayan kullanıcı, healthcheck |
+| Otomasyon | GitHub Actions | API'ye erişen ölçümler ve veri yenileme orada çalışır |
+| Tarayıcı QA | Playwright + Microsoft Edge | Gerçek tarayıcıda 390 px denemesi, ekran görüntüsü |
+
+### Modeller
+
+Hepsi **Evren API** üzerinden, OpenAI uyumlu uçlarla (`https://evren-llmapi.ssyz.org.tr/v1`) kullanılır. Anahtar
+yalnızca `EVREN_API_KEY` ortam değişkeninden okunur; repoya, loga ya da hata mesajına yazılmaz.
+
+| Görev | Model | Neden bu model |
+|---|---|---|
+| Sohbet, belirti ve tahlil açıklaması, doğrulama hakemi, acil sınıflandırıcı, bilgi çıkarımı | `deepseek-v4.1-flash` | Proje sahibinin seçimi: ajan/kod görevlerinde güçlü, 1M bağlam, ayarlanabilir düşünme bütçesi. Yan görevlerde (hakem, sınıflandırıcı) düşünme kapatılır (`enable_thinking: false`) ki hızlı olsun |
+| Embedding | `qwen3-embedding-8b` (1024 boyut) | Çok dilli; Türkçe soruyla İngilizce kaynağı eşleştirir. 4096 boyutun ilk 1024'üne kesilip normalize edilir (depolama 4'te 1) |
+| Yeniden sıralama (kapalı) | `qwen3-reranker-8b` (`POST /v1/rerank`) | Adayları yeniden sıralar; ölçüm sonucuna göre açılacak |
+| Çoklu sorgu (kapalı) | `auto` (hızlı yönlendirici) | deepseek düşünürken bu iş 8–22 sn sürüyor, `auto` ~0,5 sn |
+| Tahlil fotoğrafı OCR | `deepseek-ocr-2`, `dots-ocr` (`POST /v1/ocr`) | OCR modelleri sohbet ucunu reddeder, ayrı uç ister. Biri markdown, biri HTML tablo döndürür; ikisi de ayrıştırılır |
+| Görsel sohbet / ilaç kutusu | `qwen3-vl-30b` | OpenAI tarzı `image_url` ile görsel girdi |
+| Ses tanıma (denenmedi) | `qwen3-asr-1.7b` | Tarayıcıda ses kaydı → metin. Tarayıcı ses tanıma yedek olarak var |
+| Güvenlik sınıflandırıcı (isteğe bağlı) | `qwen3-guard-4b` | Varsayılan **kapalı**: kendine zarar çıktısını doğru etiketledi ama göğüs ağrısı gibi tıbbi acilleri yakalamıyor. O işi LLM sınıflandırıcı yapıyor |
+
+**Neden yerel/açık model değil, hazır API?** Geliştirme hızı ve H200 üzerinde yüksek eşzamanlılık. Bunun bedeli,
+sunucunun bu adrese erişmek zorunda olması ve düşünen modelin gecikmesidir (bkz. [Sınırlar](#20-bilinen-sınırlar)).
+
+---
+
+## 5. Veri kaynakları: nereden aldık, neden bunları seçtik
+
+Kural: **yalnızca lisansı açık ve ticari olmayan kullanıma uygun olan kaynaklar**; her parçada kaynak, lisans,
+yayın/güncelleme ve çekilme tarihi saklanır ve kaynak kartında gösterilir.
+
+| Kaynak | İçerik | Lisans | Çekilen miktar (tam çekim) |
+|---|---|---|---|
+| [MedlinePlus](https://medlineplus.gov) (ABD Ulusal Tıp Kütüphanesi) | Sağlık konuları, İngilizce | Kamu malı | 1.017 konu |
+| [Vikipedi](https://tr.wikipedia.org) (tr + en) | Elle seçilmiş ~550 konu (hastalık, belirti, ilk yardım, Türkiye'de sık görülenler) | CC BY-SA 4.0 | tr: 443/537, en: 547/550 |
+| [Europe PMC](https://europepmc.org) | 2020 sonrası, **CC BY / CC BY-SA** lisanslı derleme (review) makale özetleri | CC BY, CC BY-SA | 1.558 özet (545/550 konu) |
+| [openFDA](https://open.fda.gov) | İlaç prospektüsü: endikasyon, uyarı, yan etki, etkileşim. **Doz bölümleri bilerek alınmaz** | Kamu malı | 233/238 ilaç |
+| [NIH ODS](https://ods.od.nih.gov) | Vitamin ve mineral bilgi sayfaları | Kamu malı | **0/37**: Cloudflare 403 (bkz. aşağıda) |
+| `data/local/` | Kendi `.txt`/`.md` dosyaların (isteğe bağlı) | Sana ait | — |
+
+**Tahlil referans aralıklarının kaynakları** (34 test; her satırda `ref_source` alanında yazılıdır): 17'si
+MedlinePlus, 9'u Mayo Clinic Laboratories tipik değerleri, 7'si "yaygın klinik hedef/eşik değer" olarak işaretli
+(örn. glukoz, lipidler), 1'i NIH Beslenme Takviyeleri Ofisi.
+
+**Neden bu kaynaklar?**
+- *MedlinePlus ve openFDA:* kamu malı, güvenilir, makine tarafından okunabilir.
+- *Vikipedi:* Türkçe kapsamı ve geniş konu çeşitliliği; lisansı CC BY-SA olduğundan cevap yayınlarken atıf gerekir.
+- *Europe PMC:* güncel (2020+) ve açık lisanslı literatür; yalnızca özetleri ve yalnızca CC BY / CC BY-SA olanlar alınır.
+- *Dışarıda bırakılanlar:* **WHO bilgi sayfaları** (CC BY-NC-SA, ticari kullanımı kısıtlar).
+
+**Vikipedi listesi neden elle seçildi?** İlk denemede kategori gezmek ilk 500 başlığı alfabetik sırayla aldı ve
+yaygın hastalıkları kaçırdı. Bu yüzden `src/medrag/ingest/curated.py` ve `curated_extra.py` içinde elle seçilmiş,
+Türkçe/İngilizce başlık çiftlerinden oluşan bir liste var (Türkçe sayfası olmayan konuda ilk değer `None`).
+
+**NIH ODS neden 0?** `ods.od.nih.gov` bu makineden hem sayfa hem API için tarayıcı kimliğiyle bile 403 döndü
+(bot koruması). Bunu aşmaya çalışmadık. Kaynak *isteğe bağlı* işaretlendi: başarısız olunca `fetch` çıkış kodunu
+bozmaz, özette "ATLA" olarak raporlanır. GitHub Actions üzerinden denenebilir.
+
+**Önemli:** Tam çekimden sonra **32.753 parça** (41 MB) çıkıyor. Ancak şu an **indekse yalnızca eski 13.236 parça
+girmiş durumda**; yeni verilerin embedding'i masraf nedeniyle hesaplanmadı ve yeni ham veri repoya alınmadı
+(`fetch-data` workflow'u ile alınır). Yani bugün çalışan asistan eski ve daha küçük bilgi tabanını kullanır.
+
+---
+
+## 6. Veri hattı ve indeks
 
 ```bash
-curl -N -X POST localhost:8000/chat -H 'Content-Type: application/json' \
-  -d '{"message": "Migren ile baş ağrısı arasındaki fark nedir?"}'
+python -m medrag.ingest fetch --sources all            # tüm kaynakları paralel indir (hata yalıtımlı)
+python -m medrag.ingest fetch --sources europepmc,openfda --limit 20   # küçük deneme
+python -m medrag.ingest build                          # ham veri -> data/chunks.jsonl
+python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gerekir, ARTIMLI
+python -m medrag.index embed --full                    # önbelleği yok say, hepsini yeniden hesapla
+python -m medrag.index embed --trust-legacy            # eski (hash dosyasız) indeksi devral (ilk geçiş)
+python -m medrag.index search "göğüs ağrısı"           # BM25 ile hızlı deneme
 ```
 
-## Veri kaynakları ve lisanslar
+**Adımlar ve kararlar**
 
-| Kaynak | İçerik | Lisans |
-|---|---|---|
-| [MedlinePlus](https://medlineplus.gov) (ABD Ulusal Tıp Kütüphanesi) | 1.017 sağlık konusu, İngilizce | Kamu malı |
-| [Vikipedi](https://tr.wikipedia.org) | Elle seçilmiş ≈170 hastalık, belirti ve ilk yardım makalesi (Türkçe ve İngilizce) | CC BY-SA 4.0 |
-| `data/local/` | Kendi `.txt` / `.md` dosyaların (isteğe bağlı) | Sana ait |
+1. **İndirme (`ingest/`)**: kaynak başına ayrı modül; hız sınırlayıcı, 429'da geri çekilme, kaynak başına hata
+   yalıtımı. Kaynaklar aynı anda iner (farklı sunucular). Sonda özet ve çıkış kodu verir.
+2. **Temizleme**: Vikipedi'den "See also / Kaynakça / Dış bağlantılar" bölümleri alt başlıklarıyla atılır; 10
+   kelimeden kısa parçalar elenir; normalleştirilmiş metin özetiyle tekrarlar silinir.
+3. **Parçalama (`ingest/chunk.py`)**: başlıklara göre bölünür, uzun bölümler ~200 kelimelik (Europe PMC özetleri
+   320), 30 kelime örtüşmeli parçalara ayrılır. Parça kimliği kararlıdır (`belge#n`); elenen parçalar sayılmaya
+   devam ettiğinden kimlikler kaymaz.
+4. **Embedding (`index/embed.py`)**: `qwen3-embedding-8b`, vektör ilk 1024 boyuta kesilip normalize edilir.
+   Sorgularda modelin talimat öneki kullanılır, pasajlarda kullanılmaz. Sorgu embedding'leri iş parçacığı güvenli
+   bir LRU önbellekte tutulur.
+5. **Artımlı depo (`index/store.py`)**: her parça için `sha1(metin + model + boyut)` `hashes.json`'a yazılır.
+   `embed` yalnızca **yeni veya değişen** metinleri hesaplar, aynı metni bir kez gönderir, model/boyut değişirse
+   önbelleği geçersiz sayar. **İndeksin bir kez kurulması yeterlidir**; sonradan yalnızca fark hesaplanır.
+6. **Depolama**: float16 boyutu 40 MB'ı aşarsa vektör başına ölçekli **int8** kullanılır (32.753 parça için ~67 MB
+   yerine ~33 MB; kosinüs benzerliği >0,9995). `load_vectors` her zaman L2-normalize float32 döndürür ve eski
+   biçimi yükler.
 
-Kaynak, bağlantı ve lisans her parçada saklanır ve kaynak kartlarında gösterilir. Vikipedi içeriği CC BY-SA
-olduğundan, bu içerikten üretilen cevapları yayınlarken atıf ve lisans korunmalıdır.
-
-Vikipedi konuları kategoriden rastgele değil, **elle seçilmiş bir listeden** çekilir
-(`src/medrag/ingest/curated.py`). İlk denemede kategori gezmenin ilk 500 başlığı alfabetik sırayla alıp
-yaygın hastalıkları kaçırdığı görüldü. Listeye konu eklemek için tuple eklemen yeterli
-(`("Türkçe başlık", "English title")`); Türkçe sayfası olmayan konuda ilk değer `None` olur.
-
-WHO bilgi sayfaları lisansı (CC BY-NC-SA, ticari kullanımı kısıtlar) nedeniyle kapsam dışıdır.
-
-## Veriyi yenileme ve workflow'lar
-
-```bash
-python -m medrag.ingest medlineplus                 # -> data/raw/medlineplus/topics.jsonl (güncel, İngilizce)
-python -m medrag.ingest wikipedia --lang tr --curated   # seçili konular -> data/raw/wikipedia/tr.jsonl
-python -m medrag.ingest wikipedia --lang en --curated
-python -m medrag.ingest build                       # -> data/chunks.jsonl
-python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gerekir (≈9 dk)
-python -m medrag.index search "göğüs ağrısı"        # BM25 ile hızlı deneme
-```
-
-Veri değişirse (chunk sayısı ya da sırası) embedding indeksi **yeniden üretilmelidir**; aksi halde yükleme
+Veri değişirse (parça sayısı/sırası) indeks yeniden üretilmelidir; aksi halde yükleme
 "vektörler chunk listesiyle uyuşmuyor" hatası verir.
 
-GitHub'da hepsi **Actions** sekmesinden elle çalıştırılabilen workflow'lardır. API'ye erişen işler orada
-çalışır; `EVREN_API_KEY` repo ayarlarında **Actions secret** olarak tanımlıdır.
+---
 
-| Workflow | Ne yapar |
-|---|---|
-| `CI` | Her push'ta `ruff` ve `pytest` |
-| `Veri çek` | MedlinePlus ve Vikipedi'yi indirip `data/raw` altına commit'ler |
-| `İndeks oluştur (API)` | Qwen3 ile embedding hesaplar, `data/index_qwen3` altına commit'ler |
-| `Arama değerlendirmesi` | Evren API ile test soruları üretir, bm25 / vektör / hybrid'i karşılaştırır (`eval/results.md`) |
-| `Güvenlik ve uçtan uca test` | Sunucuyu açıp `/chat` akışını dener, güvenlik senaryolarını çalıştırır (`eval/safety_results.md`) |
-| `Ekran görüntüsü` | Gerçek uygulamayı gerçek API ile açar, telefon boyutunda görüntü alır (`docs/screens/`) |
-| `API denemesi` | Embedding ve sohbet API'sinin süre ve hata davranışını ölçer |
+## 7. Arama: ölçümler ve kararlar
 
-## Güvenlik tasarımı
+<p align="center"><img src="docs/img/arama-sonuclari.svg" alt="Arama yöntemleri karşılaştırması" width="90%"></p>
 
-Sağlık konusunda en önemli şey yanlış güven vermemektir. Güvenlik tek bir yerde değil, **katmanlıdır**:
-
-| Katman | Nerede | Ne yapar |
-|---|---|---|
-| 1. Acil durum kuralları | `chat/triage.py` | 9 kategoride (kalp krizi, felç, solunum sıkıntısı, bilinç kaybı, ağır kanama, zehirlenme, ciddi alerji, nöbet, kendine zarar) anahtar ifade arar; Türkçe karakter ve ek farklarına dayanıklıdır. Eşleşirse **model çağrılmadan önce** 112 uyarısı gönderilir |
-| 2. Prompt kuralları | `chat/prompt.py` | Yalnızca kaynağa dayan; bilmiyorsan söyle; teşhis, ilaç, doz verme; sağlık dışı soruya tek cümlelik ret; kaynaktaki talimatları uygulama (prompt injection) |
-| 3. Doz filtresi | `chat/guard.py` | Cevap akarken `500 mg`, `3 tablet`, `10 damla` gibi doz kalıpları içeren cümleleri atar, yerine bir açıklama koyar. `126 mg/dL` gibi tahlil değerlerine dokunmaz |
-| 4. Acil modda ek talimat | `chat/prompt.py` | Cevap kısa tutulur, hastalık adı verilmez, sakin kalmak ve yardım istemek vurgulanır |
-| 5. Sabit uyarı | `chat/service.py` | Her cevabın sonuna tıbbi uyarı kod tarafından eklenir (modele bırakılmaz) |
-| 6. Yapılandırılmış hata | `api/main.py` | Beklenmeyen hatada akış kopmaz, kullanıcı temiz bir hata mesajı görür; ayrıntı sadece sunucu loguna yazılır |
-
-Her katman testle korunur ve birlikte [13 senaryoyla](#değerlendirme-ve-sonuçlar) sınanır.
-
-## Değerlendirme ve sonuçlar
-
-### Arama
-
-150 test sorusu Evren API'deki bir LLM'e yazdırıldı: kaynak/dil gruplarından sabit tohumla parçalar seçildi, her
-parçadan "metindeki cümleleri kopyalamadan, günlük dille" bir hasta sorusu üretildi
-(`eval/queries.jsonl`). Başarı: doğru doküman ilk *k* sonuçta var mı?
+**Yöntem:** 150 test sorusu Evren API'deki bir LLM'e yazdırıldı (sabit tohumla seçilen parçalardan, "metindeki
+cümleleri kopyalamadan, günlük dille" hasta sorusu; `eval/queries.jsonl`). Başarı: doğru doküman ilk *k* sonuçta mı?
 
 | yöntem | recall@1 | recall@3 | recall@5 | recall@10 | MRR |
 |---|---|---|---|---|---|
@@ -231,125 +279,520 @@ parçadan "metindeki cümleleri kopyalamadan, günlük dille" bir hasta sorusu �
 | hybrid (bm25 ağırlığı 0,05) | 0,54 | 0,75 | 0,81 | 0,93 | 0,66 |
 | hybrid (bm25 ağırlığı 0,3) | 0,45 | 0,55 | 0,65 | 0,83 | 0,54 |
 
-Bulgular:
-- **BM25 neden zayıf:** Soruların yarısından fazlası İngilizce kaynağı hedefliyor ve Türkçe soruyla ortak
-  kelimesi yok. Vektör arama dilden bağımsızdır.
-- **Hybrid neden kötü:** İlk denemede iki sıralama eşit ağırlıkla birleştirilince sonuç vektörden *daha
-  kötü* çıktı (recall@5: 0,50). Ağırlık taramasında BM25'in en küçük ağırlığı bile sonucu kötüleştirdi.
-- **Dikkat:** Sorular LLM yazımı olduğu için gerçek kullanıcı sorularından farklı olabilir; özellikle
-  birebir terim (ilaç adı vb.) arayan sorularda BM25 daha iyi olabilir.
+**Neden vektör arama?**
+- BM25, Türkçe soru ile İngilizce kaynak arasında ortak kelime olmadığı için zayıf (soruların yarısından fazlası
+  İngilizce kaynağı hedefliyor). Vektör arama dilden bağımsızdır.
+- Hybrid ilk denemede eşit ağırlıkla vektörden *daha kötü* çıktı (recall@5: 0,50); ağırlık taramasında BM25'in en
+  küçük ağırlığı bile sonucu kötüleştirdi. Kodda dursa da kullanılmıyor.
+- *Dikkat:* sorular LLM yazımı olduğundan gerçek kullanıcı sorularından farklı olabilir; birebir terim (ilaç adı)
+  arayan sorularda BM25 daha iyi çıkabilir.
 
-### Güvenlik ve kaynağa sadakat
+### Reranker ve çoklu sorgu (kodlandı, varsayılan kapalı)
 
-13 senaryo gerçek sunucu ve gerçek model üzerinde çalışır (`eval/safety_results.md`): 3 acil durum, 3 ilaç dozu
-(biri prompt injection ile), teşhis isteği, ilaç isteği, konu dışı soru, kaynakta olmayan (uydurma) hastalık
-ve 3 normal soruda kaynağa sadakat. Kural tabanlı kontroller (112 geçiyor mu, doz var mı, atıf var mı, uyarı var
-mı) ve bir **LLM hakem** kullanılır. Son çalıştırmada 13/13 geçti.
+- **Reranker (`rerank.py`):** vektör aramadan 40 aday alıp `qwen3-reranker-8b` ile yeniden sıralar. Büyük havuz
+  gruplara bölünüp paralel gönderilir; her doküman başlık + bölüm + en fazla 1500 karakter olarak 4096 token
+  bağlama sığdırılır; `relevance_score`/`score` anahtarlarını kabul eden tolerant ayrıştırıcı; **herhangi bir hata
+  ya da zaman aşımında vektör sırasına döner** (çökmez). Qwen3-Reranker talimat şablonu isteğe bağlıdır.
+- **Çoklu sorgu (`multiquery.py`):** LLM'den İngilizce çeviri + 1–2 Türkçe yeniden yazım alır, aramaları paralel
+  yapıp RRF ile birleştirir.
+- **Küçük gerçek deneme (12 soru, yalnızca ön kontrol, tam ölçüm değildir):** doğru dokümanın ortalama sırası
+  vektörde 2,08 iken rerank sonrası 1,25–1,33 oldu; 20 ve 40 adaylık rerank isteği ~1,2 sn sürdü.
+  Çoklu sorgu `auto` modeliyle ~0,5 sn, deepseek ile 8–22 sn sürdü.
+- **Neden kapalı?** Rerank her soruda ~40 dokümanı baştan okur (tahminen soru başına ~18 bin token) ve tam ölçüm
+  yüzlerce rerank koşusu gerektirir. Masraf nedeniyle kapatıldı ve ölçüm ertelendi
+  ([Maliyet notları](#19-maliyet-notları)). Açmak için: `MEDRAG_RERANK_ENABLED=true`.
 
-Yeniden çalıştırmak için GitHub'da `Güvenlik ve uçtan uca test` workflow'unu başlat. Hakem bir LLM olduğundan
-sonuçlar turdan tura biraz oynayabilir. Geliştirme sırasında bu testler gerçek hatalar yakaladı: kaynaktaki
-günlük üst sınırın cevaba sızması, akışın son parçasında bağlantının kopması, konu dışı soruya tavsiye verilmesi.
+Ölçümü yeniden çalıştırmak: `python -m medrag.eval run --methods all` (GitHub'da `Arama değerlendirmesi`).
 
-## Dizin yapısı
+---
 
+## 8. Sohbet servisi
+
+`POST /chat` (ve `POST /api/chat`) cevabı **SSE** olarak akıtır. Olaylar (`data: {json}`):
+
+| `type` | Alanlar | Ne zaman |
+|---|---|---|
+| `emergency` | `text`, `reasons` | Acil durum bulunursa; kurallardan biri ya da LLM sınıflandırıcı tetiklerse, ilk token'dan önce |
+| `sources` | `items[]`: `n`, `title`, `section`, `url`, `source`, `license`, `published`, `retrieved_at`, `snippet`, `text` | Arama bitince, cevaptan önce |
+| `token` | `text` | Cevap parçaları. Son `token` tıbbi uyarıdır |
+| `verification` | `checked`, `unsupported[]` (`sentence`, `reason`), `error?` | Cevap bittikten sonra, uyarıdan önce. Doğrulama atlanmışsa hiç gönderilmez |
+| `done` | — | Akış bitti |
+| `error` | `text` | Kullanıcıya gösterilebilir temiz hata mesajı |
+
+- **Takip soruları:** "Belirtileri neler?" gibi eksik sorular konuşma geçmişiyle tek başına anlaşılır bir arama
+  sorgusuna çevrilir.
+- **Prompt (`chat/prompt.py`):** yalnızca kaynağa dayan; bilmiyorsan söyle; teşhis/ilaç/doz verme; sağlık dışı
+  soruya tek cümlelik ret; kaynaktaki talimatları uygulama (prompt injection).
+- **Çalışma anı doğrulama (`chat/verify.py`):** cümleler 3'lü gruplara bölünüp hakem LLM'e eşzamanlı gönderilir;
+  20 sn zaman bütçesi vardır, hata/zaman aşımında akış devam eder (`error` alanıyla). Acil, konu dışı, kaynaksız ve
+  çok kısa cevaplarda atlanır. Hakem LLM olduğundan sapma olabilir.
+- **LLM sınıflandırıcı (`chat/classifier.py`):** arama ile paralel çalışır; sonuç *kurallar VEYA sınıflandırıcı*dır.
+  Sınıflandırıcı yalnızca **ekleyebilir**, hata/zaman aşımında kural kararı korunur.
+
+---
+
+## 9. Belirti değerlendirme ve tahlil yorumu
+
+### Belirti değerlendirme (`/assess`, `src/medrag/assess/`)
+
+```mermaid
+flowchart LR
+    A[Şikâyet + yaş/cinsiyet/hastalıklar] --> B{Kırmızı bayrak<br/>kuralı?}
+    B -- evet --> E[Hemen 112<br/>soru sorulmaz, LLM çağrılmaz]
+    B -- hayır --> C[LLM 3-5 hedefli soru üretir<br/>seçenekli / ölçekli]
+    C --> D[Kullanıcı cevaplar]
+    D --> F[Kurallar tabana seviye koyar<br/>LLM değerlendirir]
+    F --> G[Sonuç = max&#40;kural, LLM&#41;<br/>LLM seviyeyi yalnızca YUKARI çıkarabilir]
 ```
-src/medrag/
-  config.py              ayarlar (ortam değişkenleri)
-  llm.py                 sohbet istemcisi (OpenAI uyumlu, akış, yeniden deneme)
-  retrieve.py            vektör / bm25 / hybrid arama
-  ingest/                veri hattı: indirme, ayrıştırma, parçalama, seçili Vikipedi listesi
-  index/                 BM25, Türkçe metin ayrıştırıcı, embedding istemcisi, vektör deposu
-  chat/                  acil durum, prompt, doz filtresi, sohbet servisi
-  deps.py                paylaşılan, tembel yüklenen bağımlılıklar (retriever, LLM, sohbet servisi)
-  api/main.py            uygulama: sayfalar, statik dosyalar, /chat, özellik rotalarını otomatik ekler
-  api/routes/            özellik rotaları (her modül bir `router`; otomatik bulunur)
-  api/middleware.py      sunucu ara katmanları
-  web/index.html         sohbet sayfası; diğer sayfalar web/<ad>.html → /<ad>
-  web/static/            ortak tasarım sistemi (base.css) ve yardımcılar (common.js)
-  eval/                  değerlendirmeler; her *_cli.py modülü kendi alt komutunu ekler
-data/raw/                indirilmiş ham kaynaklar (repoda)
-data/index_qwen3/        embedding indeksi (repoda)
-eval/                    test soruları ve sonuç raporları
-docs/screens/            gerçek uygulamadan ekran görüntüleri
-scripts/screens.py       ekran görüntüsü alma betiği
-tests/                   birim ve API testleri (LLM ve embedding sahte servislerle)
-.github/workflows/       CI ve elle çalışan workflow'lar
+
+- **Kural motoru (`assess/rules.py`)** `check_emergency` ile birlikte çalışır; yaş ve gebelik duyarlıdır
+  ("ağrım yok" gibi olumsuz cümleler elenir). **Kural seviyesi taban seviyedir**; LLM bunu asla aşağı çekemez.
+- LLM hata verir ya da geçersiz JSON döndürürse sonuç **"bugün hekime başvurun"** olur (güvenli taraf).
+- LLM çıktısı kod çiti ve fazladan metne dayanıklı ayrıştırılır, pydantic ile doğrulanır, bir onarım denemesi vardır.
+  Doz içeren öz-bakım maddeleri atılır; öz-bakım yalnızca "birkaç gün içinde" ve "evde" seviyelerinde gösterilir.
+- **5 yaş altında ateş:** en az "birkaç gün içinde hekim" seviyesidir (evde izlemeye bırakılmaz). 3 aydan küçük
+  bebekte ateş doğrudan acildir.
+- **Ölçüm (`eval/assess_results.md`, 19 senaryo, deepseek-v4.1-flash):** 18'i beklenen aralıkta, 7 acil senaryonun
+  hepsi acil, aşırı triyaj yok, JSON %100 geçerli. Çocukta hafif ateş senaryosu "evde" çıkmıştı; bu yüzden yukarıdaki
+  5 yaş kuralı eklendi. Bu rapor kuraldan *önceki* koşuya aittir, tam set yeniden koşulmadı. Ortalama gecikme
+  senaryo başına ~130 sn (düşünen model + simüle hasta) ölçüldü; gerçek kullanımda sayfa yavaş hissettirebilir.
+
+### Tahlil yorumu (`/labs`, `src/medrag/labs/`)
+
+- **Sınıflandırma tamamen kural tabanlıdır** (düşük / normal / yüksek / kritik / belirsiz). LLM sınıflandırma
+  yapmaz; yalnızca anormal değerler için kaynaklı, doz içermeyen bir açıklama yazar. LLM ya da arama yoksa kural
+  tabanlı sonuç yine döner.
+- **Referans aralığı politikası (önemli):**
+  1. **Raporda aralık yazıyorsa o esas alınır** (kullanıcı "Raporumdaki referans aralığı" alanını girer; sonuç
+     `basis: "report"` ile işaretlenir ve yerleşik aralığın yerine geçer).
+  2. **Yazmıyorsa** genel yetişkin aralığı kullanılır (`basis: "builtin"`) ve sonuca şu not eklenir: *aralıklar
+     laboratuvara göre değişir, kesin değerlendirme için raporunuzdaki aralığa bakın ve hekiminize danışın.*
+  3. **Kritik eşikler** genel klinik eşiklerdir; her zaman uygulanır (güvenlik için aşağı çekilmez) ve her kritik
+     sonuçta "bu değeri bir hekimle değerlendirin" notu çıkar. Kritik değerde sabit acil uyarı gösterilir.
+  4. Yetişkin dışı (18 yaş altı) için ek uyarı verilir; cinsiyet belirtilmezse kadın ve erkek aralıklarını kapsayan
+     geniş aralık kullanılır.
+- **34 test:** hemogram (Hb, Hct, lökosit, trombosit, eritrosit, MCV), glukoz, HbA1c, lipidler (total, LDL, HDL,
+  trigliserid), böbrek (kreatinin, üre, BUN, ürik asit), karaciğer (ALT, AST, GGT, ALP, bilirubin, albümin), tiroit
+  (TSH, sT4), demir/ferritin, B12, folat, D vitamini, CRP, elektrolitler (Na, K, Cl) ve kalsiyum. Türkçe harf
+  duyarsız ad eşleştirme, `5,4` / `<0.5` / `3.5-5.0` ayrıştırma ve birim dönüşümü (HbA1c mmol/mol dahil) vardır.
+- **Fotoğraftan okuma (`vision.py`):** dosya imzası (JPEG/PNG/WebP, ≤ 8 MB) doğrulanır; görsel **saklanmaz**. Önce
+  OCR modelleri (`/v1/ocr`), sonra `qwen3-vl-30b` denenir. Çıkarımı LLM yapar ve **sayısı OCR metninde geçmeyen satır
+  atılır** (uydurmayı önler); LLM çökerse kural tabanlı ayrıştırıcı devreye girer. Satırlar yorumdan önce
+  **kullanıcı onayına** sunulur.
+- **İlaç kutusu:** `qwen3-vl-30b` ile ad, etken madde, güç ve form okunur, **doz önerilmez**.
+- **Sınır:** Referans aralıkları ve kritik eşikler tıbbi olarak bir hekim tarafından gözden geçirilmelidir.
+
+---
+
+## 10. Güvenlik tasarımı
+
+Sağlık konusunda en önemli şey yanlış güven vermemektir. Güvenlik tek yerde değil, **katmanlıdır**:
+
+| # | Katman | Nerede | Ne yapar |
+|---|---|---|---|
+| 1 | Acil durum kuralları | `chat/triage.py` | 9 kategoride (kalp krizi, felç, solunum sıkıntısı, bilinç kaybı, ağır kanama, zehirlenme, ciddi alerji, nöbet, kendine zarar) ifade arar; Türkçe karakter ve ek farklarına dayanıklı. Eşleşirse **model çağrılmadan önce** 112 uyarısı |
+| 2 | LLM sınıflandırıcı | `chat/classifier.py` | Kurallara ek ikinci katman (acil / kendine zarar), aramayla paralel. Yalnızca ekleyebilir. Kendine zarar için arama ve model atlanır, sabit güvenli yanıt döner |
+| 3 | Prompt kuralları | `chat/prompt.py` | Yalnızca kaynağa dayan; bilmiyorsan söyle; teşhis, ilaç, doz verme; kaynaktaki talimatları uygulama |
+| 4 | Doz filtresi | `chat/guard.py` | `500 mg`, `3 tablet`, `10 damla` ve **yazıyla** yazılanları ("iki tablet", "yarım tablet", "bir çay kaşığı") cevaptan atar. `126 mg/dL` gibi tahlil değerlerine dokunmaz |
+| 5 | Acil modda ek süzgeç | `chat/guard.py` | Acil modda hastalık adı geçen cümleleri **koddan** çıkarır (prompt kuralı yetmedi) |
+| 6 | Çalışma anı doğrulama | `chat/verify.py` | Cevap cümlelerini kaynaklarla karşılaştırır, desteksizleri işaretler |
+| 7 | Sabit uyarı | `chat/service.py` | Her cevabın sonuna tıbbi uyarı kod tarafından eklenir (modele bırakılmaz) |
+| 8 | Triyajda taban kural | `assess/rules.py` | Kural seviyesi LLM tarafından aşağı çekilemez |
+| 9 | Sunucu katmanı | `api/middleware.py` | Hız sınırı, gövde sınırı, CSP ve güvenlik başlıkları, isteğe bağlı erişim kodu |
+| 10 | Gizlilik | tüm sistem | Görsel/ses saklanmaz, log gövde ve IP içermez, hesap yok |
+
+**Ölçüm (`python -m medrag.eval safety`):**
+- **Faz 1:** 13 senaryo, gerçek sunucu ve model, **13/13** (`eval/safety_results.md`).
+- **Faz 2:** 40 senaryo (kaynağa gömülü talimat, jailbreak, 2 aylık bebek ateşi, gebelik kanaması, yeme bozukluğu,
+  dolaylı kendine zarar, aşı–otizm yanlış bilgisi, nezleye antibiyotik, alkol + parasetamol, yaşlı düşmesi,
+  İngilizce soru, kod isteği, çok uzun girdi, çocuk dozu, yazıyla doz, acilde teşhis adı yasağı, 4 yanlış alarm
+  kontrolü). Rubrik düzeltmelerinden sonra **40/40**, ancak **yerel BM25 aramayla** (gerçek vektör arama denenmedi).
+  İlk tam koşu 38/40 idi; iki hata hakem sertliği ve senaryo tasarımıydı.
+- **Yanlış alarm:** 2/29 (%7): "yeme bozukluğu" (savunulabilir) ve uzun girdi (nötr metinle düzeltilip yeniden
+  geçti). Bilgi amaçlı sorularda ("intihar nedir") da kriz mesajı çıkabilir.
+
+Geliştirme sırasında bu testler gerçek hatalar yakaladı: kaynaktaki günlük üst sınırın cevaba sızması, akışın son
+parçasında bağlantının kopması, konu dışı soruya tavsiye verilmesi, acil modda hastalık adının sızması.
+
+---
+
+## 11. Arayüz ve PWA
+
+- **Tasarım:** sakin tıbbi yeşil-mavi vurgu, nötr yüzeyler, AA kontrast (açık ve koyu), 8 px ritim, yuvarlak
+  kartlar, odak halkaları, `prefers-reduced-motion` desteği. Tüm stiller `web/static/base.css` ortak sistemindedir.
+- **Ortak yardımcılar (`window.MedRAG`, `web/static/common.js`):** `renderMarkdown` (önce kaçışlar, güvenli),
+  `streamSSE`, `postJSON`, `uploadFile`, `getJSON`, `toast`, `confirmDialog`, tema (sistem/açık/koyu), erişim kodu.
+- **Tema:** `data-theme-toggle` düğmesi sistem → açık → koyu arasında döner, tercih yalnızca tarayıcıda saklanır.
+- **Erişim kodu:** sunucu `MEDRAG_ACCESS_CODE` ile korunuyorsa `401 access_code_required` gelince arayüz kodu bir
+  kez sorar, saklar ve isteği yeniden dener.
+- **PWA:** `manifest.webmanifest` ("Sağlık Asistanı", 192/512 ve maskable PNG simgeler), `sw.js`: `/static/*` için
+  önce önbellek, sayfalar için önce ağ ve çevrimdışı yedek sayfası. **`/api/*`, `/chat` ve GET dışı istekler asla
+  önbelleğe alınmaz.**
+- **Sohbet:** karşılama ve öneri çipleri, akışlı baloncuklar, Durdur düğmesi, 112 düğmeli acil bandı, genişleyen
+  kaynak kartları, `[n]` atfına tıklayınca kart açılır, doğrulama işaretleri, 👍/👎 (`/api/feedback`), kopyala,
+  sesli oku (tr-TR), mikrofon (MediaRecorder → `/api/speech/transcribe`, olmazsa tarayıcı SpeechRecognition,
+  o da yoksa gizlenir), otomatik büyüyen metin kutusu, yeni sohbet, `localStorage`'da kalıcı geçmiş,
+  `/?q=...` ile ön doldurma.
+- **Tarayıcı doğrulaması:** Microsoft Edge, 390×844, açık ve koyu tema, 4 sayfa: konsol hatası yok, yatay
+  kaydırma yok. Gerçek ses kaydı, sesli okuma ve `sw.js` çevrimdışı davranışı denenmedi.
+
+### Diğer sayfalar
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ui/belirti-3-sonuc.png" width="230"><br><sub>Belirti sonucu (örnek yanıt)</sub></td>
+    <td align="center"><img src="docs/screens/ui/tahlil-2-sonuc.png" width="230"><br><sub>Tahlil sonucu (kural tabanlı; bu görüntüde LLM açıklaması yok)</sub></td>
+    <td align="center"><img src="docs/screens/ui/tahlil-3-fotograf.png" width="230"><br><sub>Fotoğraftan okuma sekmesi</sub></td>
+    <td align="center"><img src="docs/screens/ui/hakkinda.png" width="230"><br><sub>Hakkında</sub></td>
+  </tr>
+</table>
+
+### Faz 1 görüntüleri (gerçek API)
+
+<details>
+<summary>Eski arayüzden, gerçek API ile alınmış görüntüler</summary>
+
+| Normal soru | Acil durum | İlaç dozu sorusu |
+|---|---|---|
+| <img src="docs/screens/normal-light.png" width="240"> | <img src="docs/screens/acil-light.png" width="240"> | <img src="docs/screens/doz-light.png" width="240"> |
+
+Koyu tema: `docs/screens/*-dark.png`.
+</details>
+
+---
+
+## 12. Sunucu, dağıtım ve Docker
+
+**Ara katman (`api/middleware.py`, saf ASGI; SSE akışını bozmaz):**
+
+| Özellik | Varsayılan | Not |
+|---|---|---|
+| IP başına hız sınırı (token bucket) | sohbet: 20 burst / 30 dk; yükleme: 10 / 12 dk; diğer API: 60 / 120 dk | Aşılırsa `429 {"error":"rate_limited","retry_after":s}` + `Retry-After`. Kova sayısı LRU ile sınırlı (20.000) |
+| Gövde sınırı | JSON 256 KB, yükleme 12 MB | Aşılırsa `413` JSON |
+| Güvenlik başlıkları | CSP (`'self'`, satır içi stil/script serbest), `nosniff`, Referrer-Policy, Permissions-Policy (mikrofon/kamera `self`), `frame-ancestors 'none'`, HSTS isteğe bağlı | 401/429 yanıtlarında da gönderilir |
+| Erişim kodu | kapalı | `MEDRAG_ACCESS_CODE` doluysa `/chat` ve `/api/*` `X-Access-Code` ister (sabit zamanlı karşılaştırma). Sayfalar, `/static`, `/health`, `/sw.js`, manifest ve `GET /api/meta/info` açık kalır |
+| Günlük | JSON, istek kimlikli | **Gövde, sorgu parametresi, başlık ve IP yazılmaz** (IP için `MEDRAG_LOG_CLIENT_IP=1`) |
+| Yapılandırma hatası | — | `EVREN_API_KEY` yoksa çökmek yerine `503 {"error":"config_error"}` döner |
+| `X-Forwarded-For` | güvenilmez | Yalnızca `MEDRAG_TRUST_PROXY_HEADERS=1` iken kullanılır (vekil arkasında) |
+
+Hız sınırı ve metrikler **süreç belleğindedir**; çok işçili çalışmada her işçi kendi sayacını tutar (varsayılan
+`WEB_CONCURRENCY=1`).
+
+**Docker (derlendi ve duman testinden geçti):**
+
+```bash
+docker build -t medrag .
+docker run -p 8000:8000 -e EVREN_API_KEY=... medrag
+# ya da .env dosyasıyla:
+docker compose up -d --build
 ```
 
-## Geliştirme
+- `python:3.12-slim`, **root olmayan kullanıcı** (`medrag`, uid 10001), `HEALTHCHECK` (`/health`), `--proxy-headers`,
+  `PORT` ve `WEB_CONCURRENCY` ortam değişkenleriyle ayarlanır.
+- Doğrulama (17.10.2026): imaj derlendi; konteyner `healthy`; `/health`, `/`, `/assess`, `/labs`, `/about` 200;
+  CSP başlığı ve `/api/meta/info` geliyor; kullanıcı `medrag`.
+- İmaja ham veri ve embedding indeksi girer; `chunks.jsonl` ilk açılışta üretilir. Bu yüzden `GET /api/meta/info`
+  içindeki kaynak sayıları ilk retriever yüklenene kadar boş görünebilir.
+- Geri bildirim `data/feedback/feedback.jsonl` dosyasına yazılır; kalıcı olması için bu klasöre bir volume bağlayın.
+- `deploy/` altında **Render** (`render.yaml`), **Fly.io** (`fly.toml`), VPS + **Caddy** (otomatik HTTPS,
+  `Caddyfile`) ve **systemd** (`medrag.service`) örnekleri vardır. Sunucudan `evren-llmapi.ssyz.org.tr` adresine
+  çıkış erişimi şarttır. Mikrofon ve kamera yalnızca HTTPS'te çalışır.
+- Genel yayın için öneri: `MEDRAG_ACCESS_CODE`, `MEDRAG_HSTS=1`, vekil arkasında `MEDRAG_TRUST_PROXY_HEADERS=1`.
+
+---
+
+## 13. Hızlı başlangıç
+
+**Gereksinimler:** Python 3.11+, Evren API anahtarı (`EVREN_API_KEY`) ve sunucunun
+`evren-llmapi.ssyz.org.tr` adresine erişimi.
+
+```bash
+git clone https://github.com/furkancmc/phone && cd phone
+git checkout ccr-fc8175dc-sqyb1k
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+
+export EVREN_API_KEY=...        # ya da .env dosyasına yaz (gitignore'da); anahtarı asla commit etme
+python -m medrag.api            # http://localhost:8000
+```
+
+İlk açılışta `data/raw` içindeki ham veriden `data/chunks.jsonl` kendiliğinden üretilir (birkaç saniye). Embedding
+indeksi (`data/index_qwen3/`) repoda hazırdır.
+
+**API anahtarı olmadan arayüzü denemek:** `python scripts/dev_server.py` (sahte servislerle; gerçek API çağrısı yapmaz).
+
+**Telefondan açmak:** Bilgisayar ve telefon aynı Wi-Fi'daysa telefon tarayıcısına
+`http://<bilgisayarın-ip-adresi>:8000` yaz ve "Ana ekrana ekle" ile PWA olarak ekle.
+
+**Yerel PC kurulumu:** `bash scripts/local/kur.sh` (Windows: `.\scripts\local\kur.ps1`) sanal ortamı kurar ve `.env`
+oluşturur. Claude Code'u Evren API ile kullanmak için `scripts/local/litellm.yaml` içindeki adımlara bak.
+
+---
+
+## 14. Yapılandırma
+
+Ayarlar `MEDRAG_` önekli ortam değişkenleri ya da `.env` ile verilir (`.env.example` örnektir; tam liste
+`src/medrag/config.py`). `EVREN_API_KEY` önek almaz.
+
+| Değişken (öneksiz alan adı) | Varsayılan | Anlamı |
+|---|---|---|
+| `EVREN_API_KEY` | — | **Zorunlu.** Evren API anahtarı |
+| `data_dir`, `index_dir`, `top_k` | `data`, `data/index_qwen3`, `5` | Veri ve indeks yeri, cevap için kaynak sayısı |
+| `embed_api_model`, `embed_dimensions` | `qwen3-embedding-8b`, `1024` | Embedding modeli; boyut değişirse indeks yeniden üretilmeli |
+| `embed_workers`, `embed_batch_size`, `embed_query_cache_size` | `16`, `64`, `1024` | Paralel istek, istek başına metin, sorgu önbelleği |
+| `llm_model` | `deepseek-v4.1-flash` | Sohbet modeli |
+| `answer_max_tokens`, `llm_extra_params` | `4096`, boş | Düşünen model token harcar; ek parametre JSON'u |
+| `rerank_enabled` | **`false`** | Reranker (masraf nedeniyle kapalı); `rerank_pool` 40, `rerank_model` `qwen3-reranker-8b` |
+| `multiquery_enabled`, `multiquery_model` | `false`, `auto` | Çoklu sorgu |
+| `verify_enabled`, `verify_model`, `verify_budget_seconds` | `true`, `deepseek-v4.1-flash`, `20` | Cevap doğrulama |
+| `classifier_enabled`, `classifier_model`, `classifier_timeout_seconds` | `true`, `deepseek-v4.1-flash`, `8` | İkinci katman acil sınıflandırıcı |
+| `guard_model` | boş | İsteğe bağlı koruma modeli (örn. `qwen3-guard-4b`) |
+| `assess_model`, `assess_max_tokens`, `assess_sources_k` | `deepseek-v4.1-flash`, `4000`, `4` | Belirti değerlendirme |
+| `labs_explain_model`, `vision_ocr_models`, `vision_chat_model`, `vision_extract_model` | `deepseek-v4.1-flash`, `deepseek-ocr-2,dots-ocr`, `qwen3-vl-30b`, `deepseek-v4.1-flash` | Tahlil ve görsel okuma |
+| `speech_model`, `speech_mode`, `speech_max_bytes` | `qwen3-asr-1.7b`, `auto`, `10 MB` | Ses tanıma (`auto`/`transcriptions`/`chat`) |
+| `access_code` | boş | Doluysa `/chat` ve `/api/*` `X-Access-Code` ister |
+| `rate_limit_enabled`, `rate_*_burst`, `rate_*_per_min` | `true`, bkz. [Sunucu](#12-sunucu-dağıtım-ve-docker) | Hız sınırı |
+| `trust_proxy_headers`, `hsts`, `csp`, `warmup` | `false`, `false`, boş, `false` | Vekil, HSTS, özel CSP, açılışta indeks ısıtma |
+| `access_log`, `log_client_ip` | `true`, `false` | JSON erişim logu; IP varsayılan olarak yazılmaz |
+| `feedback_max_bytes`, `feedback_keep` | `5 MB`, `3` | Geri bildirim dosyası döndürme |
+| `europepmc_per_topic`, `index_max_float16_mb` | `3`, `40` | Veri hattı |
+
+`OPENFDA_API_KEY` (isteğe bağlı) openFDA günlük istek bütçesini artırır.
+
+---
+
+## 15. API başvurusu
+
+| Uç nokta | Ne yapar |
+|---|---|
+| `GET /`, `/assess`, `/labs`, `/about` | Sayfalar |
+| `GET /health` | `{"status":"ok","ready":bool}`; `ready`, indeks ilk istekte yüklenince `true` |
+| `POST /chat` (`/api/chat`) | `{message, history}` → SSE ([olaylar](#8-sohbet-servisi)) |
+| `POST /api/assess/start` | Şikâyet + profil → kırmızı bayrak varsa `emergency`, yoksa 3–5 soru |
+| `POST /api/assess/finish` | Cevaplar → `level`, `summary`, `reasons`, `red_flags_to_watch`, `self_care`, `sources` |
+| `GET /api/labs/tests` | Desteklenen testlerin kataloğu (aralıklar, birimler, kaynak) |
+| `POST /api/labs/interpret` | `{values:[{test,value,unit?,ref_low?,ref_high?}], sex?, age?}` → sınıflandırma + açıklama |
+| `POST /api/vision/lab-report` | Tahlil fotoğrafı (multipart `file`) → okunan satırlar (onay için) |
+| `POST /api/vision/medicine` | İlaç kutusu fotoğrafı → ad, etken madde, güç, form (doz yok) |
+| `POST /api/speech/transcribe` | Ses (webm/ogg/mp4/mpeg/wav, ≤10 MB) → `{"text"}` |
+| `POST /api/feedback` | `{rating: 1\|-1, page, question?, answer?, comment?}` → `{"ok":true}` (IP yok) |
+| `GET /api/feedback/summary`, `GET /api/meta/metrics` | Özet ve metrikler (erişim koduyla korunur) |
+| `GET /api/meta/info` | Sürüm, kaynak başına belge/parça sayısı, modeller, değerlendirme özeti |
+
+```bash
+curl -N -X POST localhost:8000/chat -H 'Content-Type: application/json' \
+  -d '{"message": "Migren ile baş ağrısı arasındaki fark nedir?"}'
+```
+
+`message` 1–2000 karakter; `history` en fazla 20 mesaj. Geçersiz istek 422, anahtar eksikse 503 döner.
+
+---
+
+## 16. Workflow'lar (GitHub Actions)
+
+API'ye erişen işler Actions'ta çalıştırılabilir; `EVREN_API_KEY` repo ayarlarında **Actions secret** olarak tanımlıdır.
+
+| Workflow | Ne yapar |
+|---|---|
+| `CI` (`ci.yml`) | Her push'ta `ruff` ve `pytest` |
+| `Veri çek` (`fetch-data.yml`) | Haftalık (pazar 03:17 UTC) ve elle: kaynakları indirir, `data/raw` altına commit'ler |
+| `İndeks oluştur (API)` (`build-index-api.yml`) | **Artımlı** embedding (16 paralel istek); `full` ve `trust_legacy` girdileri |
+| `Arama değerlendirmesi` (`eval.yml`) | Soru üretir, yöntemleri karşılaştırır; `n`, `regenerate`, `methods` girdileri |
+| `Güvenlik ve uçtan uca test` (`safety.yml`) | 40 senaryo; isteğe bağlı model karşılaştırması |
+| `Belirti değerlendirme` (`assess.yml`) | 19 senaryoyu gerçek modelle koşar |
+| `Tahlil` (`labs.yml`) | `sanity`, `raw`, `ocr` adımları (sentetik rapor görselleriyle OCR ölçümü) |
+| `Platform` (`platform.yml`) | Ses tanıma tanısı (iki istek yolunun ham cevabı) + Docker derleme ve duman testi |
+| `Ekran görüntüsü` (`screens.yml`) | Tüm sayfaların açık/koyu görüntüleri |
+| `API denemesi` (`api-check.yml`) | API süre ve hata davranışı ölçümü |
+
+---
+
+## 17. Nasıl geliştirdik: süreç ve alınan kararlar
+
+**Faz 1** tek akışta yürüdü: iskelet → veri hattı → indeks → arama → sohbet → API ve telefon sayfası →
+değerlendirme → Docker/README. **Faz 2** yedi iş akışına bölündü (`PLAN.md`, görev tarifleri `docs/gorevler/A–G.md`):
+
+| İş akışı | Kapsam | Sonuç |
+|---|---|---|
+| A Arama | reranker, çoklu sorgu, sorgu önbelleği, ölçüm araçları | Kod hazır; reranker kapalı |
+| B Veri | Europe PMC, openFDA, NIH ODS, ~550 konu, artımlı int8 depo | 32.753 parça çekildi; indekse girmedi |
+| C Güvenlik | doğrulama, LLM sınıflandırıcı, yazıyla doz, 40 senaryo | 40/40 (BM25 ile) |
+| D Belirti | `/assess` sayfası, kural motoru | 18/19 senaryo |
+| E Tahlil | `/labs`, 34 test, OCR, ilaç kutusu | Kural tabanlı sınıflandırma tamam |
+| F Sunucu | hız sınırı, erişim kodu, geri bildirim, meta, ses, Docker | Docker doğrulandı |
+| G Arayüz | tasarım sistemi, sohbet, hakkında, PWA | Edge ile doğrulandı |
+
+Her iş akışı ayrı bir yapay zekâ ajanı tarafından **ayrı git çalışma kopyasında (worktree)** yürütüldü; dosya
+sahipliği `PLAN.md`'de tanımlandığı için çakışmalar azdı (birleştirmede yalnızca `config.py` ve bir test dosyasında
+küçük çakışma çıktı). Kesintiye karşı her ajan ilerleme notu (`docs/gelistirme-kayitlari/ILERLEME-*.md`) ve yama
+yedeği tuttu. Sonuçlar tek tek ana dala birleştirildi ve her birleştirmeden sonra tüm testler çalıştırıldı.
+
+**Başlıca kararlar ve gerekçeleri**
+
+| Karar | Gerekçe |
+|---|---|
+| Vektör arama varsayılan; BM25 ve hybrid kodda ama kapalı | Ölçüm: recall@5 0,85 vs 0,46 (BM25) ve 0,81 (hybrid) |
+| Embedding'i 1024 boyuta kesmek | Depolama 4'te 1, kalite kaybı küçük |
+| Düz dosya + numpy, vektör veritabanı yok | ~13–33 bin parça için fazlası gereksiz; repoda durur, kurulum sıfır |
+| Tüm LLM görevleri için `deepseek-v4.1-flash` | Proje sahibinin seçimi; yan görevlerde düşünme kapatıldı |
+| Reranker ve çoklu sorgu varsayılan kapalı | Ölçülmeden açılmaz; reranker masraflı (soru başına ~40 doküman) |
+| 8b embedding ve reranker ile gerçek çağrıları durdurmak | Masraf; tüm iş akışlarına yasak olarak bildirildi, gerçek doğrulama ertelendi |
+| Sınıflandırma kural tabanlı, LLM yalnızca açıklar (tahlil) | LLM'in sayı uydurma riski; kural tabanlı sonuç denetlenebilir |
+| Kural seviyesi LLM tarafından aşağı çekilemez (belirti) | Güvenli taraf; LLM hatasında "bugün hekim" |
+| Rapor aralığı varsa o esas, yoksa hekime yönlendir (tahlil) | Aralıklar laboratuvara göre değişir; yerleşik aralık tek başına yetmez |
+| WHO içeriğini almamak | CC BY-NC-SA lisansı ticari kullanımı kısıtlar |
+| Doz bölümlerini veri aşamasında hiç almamak (openFDA) | Doz bilgisi hem filtre hem veri katmanında engellenir |
+| Reranker/doğrulama hatasında sessiz geri dönüş | Yardımcı katman, asıl cevabı asla bozmamalı |
+| Arayüzde dışarıdan font/CDN yok, satır içi script yok | Gizlilik ve CSP `'self'` uyumu |
+| NIH ODS 403'ünü aşmamak, kaynağı isteğe bağlı yapmak | Bot korumasını delmek yerine açıkça raporlamak |
+
+---
+
+## 18. Test ve kalite
 
 ```bash
 pip install -e ".[dev]"
-pytest          # ≈86 test; API'ye dokunmaz, LLM ve embedding sahte servislerle test edilir
-ruff check .
+pytest          # 420 test geçti, 1 atlandı; API'ye dokunmaz, LLM ve embedding sahte servislerle
+ruff check .    # temiz
 ```
 
-- Gerçek API ile test etmek için GitHub Actions workflow'larını kullan (yukarıdaki tablo).
-- Prompt ya da güvenlik kodunu değiştirince `Güvenlik ve uçtan uca test` workflow'unu çalıştır.
-- Veri ya da parçalama değişirse embedding indeksini yeniden üret.
-- Commit mesajları kısa ve sade Türkçe yazılır.
-- **Yeni özellik eklemek:** `src/medrag/api/routes/<ad>.py` içinde `router = APIRouter(prefix="/api/<ad>")`
-  tanımla; `api/main.py` onu kendiliğinden ekler. Bağımlılıklar için `Depends(deps.get_llm)` ve
-  `Depends(deps.get_retriever)` kullan; testte `app.dependency_overrides` ile sahtesini ver.
-- **Yeni sayfa eklemek:** `src/medrag/web/<ad>.html` dosyası `/<ad>` adresinden sunulur. `/static/base.css`
-  sınıflarını ve `/static/common.js` (`window.MedRAG`) yardımcılarını kullan; `<nav id="app-nav"></nav>`
-  koy, alt gezinme kendiliğinden çizilir.
-- **Yeni değerlendirme eklemek:** `src/medrag/eval/<ad>_cli.py` içinde `register(subparsers)` yaz;
-  `python -m medrag.eval <komut>` olarak görünür.
+- Testler; arama (BM25, vektör, rerank ayrıştırma/parti/geri dönüş, LRU önbellek), veri hattı (ayrıştırma, parça
+  kimliği, artımlı depo, int8 gidiş-dönüş), sohbet (doz filtresi, acil durum, doğrulama, sınıflandırıcı),
+  belirti kuralları, tahlil ayrıştırma ve sınıflandırma, görsel okuma, sunucu katmanı (hız sınırı, gövde sınırı,
+  başlıklar, erişim kodu, log sızıntısı, SSE) ve sayfaların sunulmasını kapsar.
+- Gerçek API ile doğrulama Actions workflow'larında ya da yerelde (anahtar `.env`'de) yapılır.
+- Prompt ya da güvenlik kodunu değiştirince `Güvenlik ve uçtan uca test` çalıştırılmalıdır.
+- Commit mesajları kısa ve sade Türkçedir; anahtarlar asla repoya yazılmaz.
 
-## Sorun giderme
+**Yeni özellik eklemek:** `src/medrag/api/routes/<ad>.py` içinde `router = APIRouter(prefix="/api/<ad>")`
+tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Depends(deps.get_retriever)`; testte
+`app.dependency_overrides`. **Yeni sayfa:** `src/medrag/web/<ad>.html` → `/<ad>`; `base.css`, `common.js` ve
+`<nav id="app-nav"></nav>`. **Yeni değerlendirme:** `src/medrag/eval/<ad>_cli.py` içinde `register(subparsers)`.
+
+---
+
+## 19. Maliyet notları
+
+- **Embedding indeksi bir kez kurulur** ve artımlıdır (hash önbelleği). Bekleyen tek seferlik büyük iş: yeni
+  ~19.500 parçanın embedding'i. Her arama sorusu yalnızca 1 kısa embedding çağrısı yapar (~20 token, önbellekli).
+- **Reranker pahalıdır**, çünkü indekste durmaz ve her soruda 40 dokümanı yeniden okur (doküman başına ~450 token →
+  soru başına tahminen ~18 bin token). Tam ölçüm (150 soru × birkaç yöntem) on milyon token mertebesine çıkar ve
+  hız sınırına (429) takılır. Bunlar koddaki ayarlardan yapılmış **tahminlerdir, ölçülmüş değildir**.
+- **Düşünen model (deepseek) yavaştır:** küçük bir istek bile düşünme bütçesini tüketebilir; belirti senaryosu
+  başına ~130 sn ölçüldü. Yan görevlerde düşünme kapatılır; ana cevaplarda `answer_max_tokens` cömert tutulur.
+- **Geri dönüldüğünde masrafı düşürmek için:** rerank havuzunu 10–15'e ve doküman metnini ~600 karaktere indir,
+  ölçümü 40–50 soru ve 2 yöntemle yap, indeksi yeni verilerle tek seferde kur.
+
+---
+
+## 20. Bilinen sınırlar
+
+- **Bilgi tabanı:** Çalışan indeks ~13 bin parça (~1.200 belge). Yeni 32,7 bin parça henüz indekste değil.
+  Kapsam dışı konuda "bilgi bulamadım" demesi beklenir.
+- **Tıbbi inceleme:** Tahlil referans aralıkları ve kritik eşikler, belirti kuralları bir hekim tarafından
+  gözden geçirilmedi. Aralıklar laboratuvara göre değişir; sistem raporun kendi aralığını önceler.
+- **Acil durum tespiti** kurallara ve bir LLM'e dayanır; her ifadeyi yakalamaz. Bilgi amaçlı sorularda ("intihar nedir")
+  da kriz mesajı çıkabilir.
+- **Doz filtresi** yazıyla yazılan yaygın ifadeleri yakalar ama her varyantı garanti etmez.
+- **Güvenlik koşuları BM25 aramayla yapıldı**; gerçek vektör aramayla uçtan uca doğrulama yapılmadı.
+- **Doğrulama hakemi LLM'dir**, sapabilir; yük altında 20 sn bütçe aşılabilir. İşaretleme, cümleyi cevap metninde
+  tam eşleşmeyle bulur; bulunamayan cümleler yalnızca nottaki listede görünür.
+- **OCR** yalnızca temiz sentetik görsellerle denendi; eğik, gürültülü ve gerçek telefon fotoğrafı doğruluğu
+  ölçülmedi. Fotoğraftan okunan satırlar her zaman kullanıcı onayına sunulur.
+- **Ses tanıma doğrulanmadı** (gerçek ses denenmedi); mikrofon, sesli okuma ve `sw.js` çevrimdışı akışı tarayıcıda
+  uçtan uca denenmedi.
+- **Gecikme:** Düşünen model yüzünden belirti ve tahlil açıklaması dakikaya yaklaşabilir.
+- **Hız sınırı ve metrikler süreç belleğinde**; çok işçide işçi başına sayılır. CSP'de `'unsafe-inline'` açık.
+- **Test sorularını ve hakemi LLM yazıyor**; ölçümler gerçek kullanımı birebir yansıtmaz.
+- **Sunucu `evren-llmapi.ssyz.org.tr` adresine erişebilmeli.**
+- **NIH ODS** kaynağı bot koruması nedeniyle alınamadı.
+- Git geçmişinde yaklaşık 20 MB gereksiz dosya var (geçmişi yeniden yazmamak için bırakıldı).
+
+---
+
+## 21. Sorun giderme
 
 | Belirti | Neden / çözüm |
 |---|---|
-| `EVREN_API_KEY ortam değişkeni tanımlı değil` | Anahtarı `export EVREN_API_KEY=...` ile ver. Sunucu `.env` içindeki anahtarı okumaz |
-| Sayfa açılıyor ama cevap "Şu an cevap veremiyorum" | Sunucu API'ye ulaşamıyor olabilir (ağ, anahtar, kota). Ayrıntı sunucu logunda (`chat hatası: ...`) |
-| `Vektörler mevcut chunk listesiyle uyuşmuyor` | Veri değişti. `python -m medrag.index embed --index-dir data/index_qwen3` ile indeksi yeniden üret |
-| `HTTP 429` | API istek sınırı. İstemci otomatik bekleyip yeniden dener; sürerse paralel istek sayısını azalt |
-| `LLM boş cevap verdi` | Yönlendirici bazen boş içerik döner; istemci 3 kez dener. Sürerse log satırındaki model ve `refusal` bilgisine bak |
-| Telefon sayfayı açamıyor | Aynı ağda olduklarını, bilgisayarın güvenlik duvarının 8000 portuna izin verdiğini kontrol et |
+| `503 config_error` / `EVREN_API_KEY ... tanımlı değil` | Anahtarı ortam değişkeni ya da `.env` ile ver |
+| "Şu an cevap veremiyorum" | Sunucu API'ye ulaşamıyor olabilir (ağ, anahtar, kota); ayrıntı sunucu logunda |
+| `Vektörler mevcut chunk listesiyle uyuşmuyor` | Veri değişti; `python -m medrag.index embed --index-dir data/index_qwen3` |
+| `HTTP 429` | API ya da sunucu hız sınırı; istemci geri çekilip yeniden dener, sürerse paralelliği azalt |
+| `LLM boş cevap verdi` | Düşünen model token bütçesini tüketmiş olabilir; `answer_max_tokens`'ı artır |
+| Doğrulama hiç görünmüyor | Acil, konu dışı, kaynaksız ya da çok kısa cevaplarda atlanır; arayüz "olay yok"u da işler |
+| Telefon sayfayı açamıyor | Aynı ağda olduklarını ve güvenlik duvarının 8000 portuna izin verdiğini kontrol et |
+| Windows'ta Türkçe karakter bozuk | `PYTHONUTF8=1` kullan; dosyaları `encoding="utf-8"` ile aç |
+| `fetch` çıkış kodu 1 | Zorunlu bir kaynak başarısız oldu; NIH ODS 403'ü çıkış kodunu etkilemez |
 
-## Sınırlar
+---
 
-- **Bilgi tabanı küçük** (yaklaşık 1.200 makale ve konu). Kapsam dışı bir konuda "bilgi bulamadım" demesi beklenir.
-- **Acil durum kontrolü anahtar kelime kurallarına dayanır**; her ifadeyi yakalamaz. Kural tespit etmese de
-  model, belirtiler ağırsa sağlık profesyoneline yönlendirir ama bu garanti değildir.
-- **Doz filtresi "sayı + birim" kalıplarını yakalar** (`500 mg`, `3 tablet`). "İki kutu", "yarım tablet", "bir çay
-  kaşığı" gibi yazıyla ifadeleri yakalamaz.
-- **Hız sınırı ve kullanıcı kimliği yok.** Herkese açık bir sunucuya koymadan önce eklenmeli.
-- **Test soruları ve güvenlik hakemi LLM'dir**; ölçümler gerçek kullanımı birebir yansıtmaz.
-- **Sunucu `evren-llmapi.ssyz.org.tr` adresine erişebilmeli.**
-- **Docker derlenip denenmedi.**
-- Git geçmişinde yaklaşık 20 MB gereksiz dosya var (geçmişi yeniden yazmamak için bırakıldı).
+## 22. Dizin yapısı
 
-## Yol haritası
+```
+src/medrag/
+  config.py              ayarlar (MEDRAG_ ortam değişkenleri), ConfigError
+  llm.py                 sohbet istemcisi (OpenAI uyumlu, akış, yeniden deneme, düşünen model)
+  retrieve.py            vektör / bm25 / hybrid arama; isteğe bağlı çoklu sorgu ve rerank hattı
+  rerank.py, multiquery.py, lru.py   reranker, sorgu genişletme, iş parçacığı güvenli önbellek
+  ingest/                veri hattı: indirme, ayrıştırma, parçalama, kaynaklar (europepmc, openfda, nihods...)
+  index/                 BM25, Türkçe ayrıştırıcı, embedding istemcisi, artımlı vektör deposu
+  chat/                  acil durum, prompt, doz filtresi, doğrulama, sınıflandırıcı, sohbet servisi
+  assess/                belirti değerlendirme: kurallar, modeller, servis
+  labs/                  tahlil: referans tablosu, yorumlayıcı, açıklama servisi
+  vision.py, speech.py   görsel okuma (OCR/VL) ve ses tanıma istemcileri
+  observability.py       bellek içi metrikler, JSON günlük
+  deps.py                paylaşılan, tembel yüklenen bağımlılıklar
+  api/main.py            uygulama: sayfalar, statik dosyalar, /chat, rotaları otomatik ekler
+  api/middleware.py      hız sınırı, gövde sınırı, başlıklar, erişim kodu, günlük
+  api/routes/            assess, labs, vision, speech, feedback, meta
+  web/                   index/assess/labs/about.html + static/ (base.css, common.js, chat.js, sw.js, PWA)
+  eval/                  değerlendirmeler; her *_cli.py kendi alt komutunu ekler
+data/raw/, data/index_qwen3/   ham kaynaklar ve embedding indeksi (repoda)
+eval/                    test soruları ve sonuç raporları
+docs/screens/, docs/img/ ekran görüntüleri ve diyagramlar
+docs/gorevler/           iş akışı görev tarifleri (A–G)
+docs/gelistirme-kayitlari/   ajanların ilerleme notları
+deploy/                  Render, Fly.io, Caddy, systemd örnekleri
+scripts/                 dev_server.py, screens.py, make_icons.py, local/ (kurulum)
+tests/                   birim ve API testleri
+.github/workflows/       CI ve elle çalışan workflow'lar
+```
 
-Faz 2 sürüyor (ayrıntılar [`PLAN.md`](PLAN.md)): reranker ve çoklu sorgu, güncel ve kaliteli yeni kaynaklar
-(Europe PMC, openFDA, NIH ODS, genişletilmiş Vikipedi), çalışma anında cevap doğrulama, ikinci katman acil durum
-sınıflandırıcı, yeni sayfalar (Belirti Değerlendirme, Tahlil Yorumu, Hakkında), fotoğraftan tahlil ve ilaç kutusu
-okuma, sesle soru sorma, modern arayüz ve PWA, hız sınırı ve barındırma hazırlığı.
+---
 
-## Yasal uyarı
+## 23. Yasal uyarı ve lisanslar
 
 Bu proje bir eğitim ve araştırma çalışmasıdır. Ürettiği bilgiler **genel bilgilendirme** amaçlıdır; tıbbi tavsiye,
 teşhis ya da tedavi yerine geçmez. Sağlık sorunlarınız için bir sağlık profesyoneline başvurun. Acil durumda
 **112**'yi arayın.
 
-## Değişiklik günlüğü
+Veri lisansları: MedlinePlus ve openFDA kamu malı; Vikipedi CC BY-SA 4.0 (atıf ve aynı lisans gerekir); Europe PMC
+yalnızca CC BY / CC BY-SA lisanslı özetler. Vikipedi'den türeyen cevapları yayınlarken atıf ve lisans korunmalıdır.
+Kaynak, bağlantı ve lisans her parçada saklanır ve kaynak kartlarında gösterilir.
 
-### Faz 2 (devam ediyor)
-- Paralel geliştirme için modüler iskelet: özellik rotaları `api/routes/` altında otomatik bulunur, sayfalar
-  `web/<ad>.html` olarak eklenir, ortak tasarım sistemi `web/static/` altında, ayarlar iş akışı bloklarına ve
-  değerlendirme komutları `*_cli.py` modüllerine bölündü. Sohbet `/api/chat` adresinden de çalışır.
-- Evren API model listesi çıkarıldı: reranker (`qwen3-reranker-8b`), OCR (`deepseek-ocr-2`, `dots-ocr`), görsel
-  (`qwen3-vl-30b`), ses tanıma (`qwen3-asr-1.7b`), güvenlik sınıflandırıcı (`qwen3-guard-4b`) ve daha güçlü sohbet
-  modelleri mevcut (`PLAN.md`).
+---
+
+## 24. Değişiklik günlüğü
+
+### Faz 2
+- **Arama (A):** reranker, çoklu sorgu, sorgu embedding önbelleği, yöntem karşılaştırma ve gecikme ölçümü. Reranker
+  masraf nedeniyle varsayılan kapalı.
+- **Veri (B):** Europe PMC, openFDA, NIH ODS (isteğe bağlı), ~550 konuluk Vikipedi listesi, parça meta verisi,
+  kalite süzgeçleri, artımlı int8 embedding deposu, haftalık yenileme workflow'u.
+- **Güvenlik (C):** çalışma anı doğrulama, LLM sınıflandırıcı, acil modda hastalık adı süzgeci, yazıyla doz yakalama,
+  40 senaryo.
+- **Belirti (D):** `/assess` sayfası, kural motoru, 5 yaş altı ateş kuralı.
+- **Tahlil (E):** `/labs`, 34 testlik kaynaklı referans tablosu, rapor aralığı önceliği, OCR ve ilaç kutusu okuma.
+- **Sunucu (F):** hız sınırı, gövde sınırı, güvenlik başlıkları, erişim kodu, geri bildirim, meta, ses tanıma,
+  Docker (derlendi ve doğrulandı), barındırma örnekleri.
+- **Arayüz (G):** yeni tasarım sistemi, sohbet, Hakkında, PWA, tema, erişim kodu akışı.
+- **Düzeltmeler:** `EVREN_API_KEY` yokken sunucu çökmek yerine `503 config_error` döner; NIH ODS isteğe bağlı kaynak
+  oldu; varsayılan model `deepseek-v4.1-flash` oldu; birleşen ajan dalları ve yedek yamalar temizlendi.
 
 ### Faz 1
-- Doz içeren cümle artık tek bir açıklama cümlesiyle değiştiriliyor; acil cevapta hastalık adı verilmemesi kuralı.
-- Gerçek API ile ekran görüntüleri (`docs/screens/`), güvenlik senaryoları 13/13.
-- Vektör arama varsayılan oldu (ölçüm: recall@5 0,85); hybrid ve BM25 isteğe bağlı.
+- Doz içeren cümle tek bir açıklama cümlesiyle değiştiriliyor; acil cevapta hastalık adı verilmemesi kuralı.
+- Gerçek API ile ekran görüntüleri, güvenlik senaryoları 13/13.
+- Vektör arama varsayılan oldu (recall@5 0,85); hybrid ve BM25 isteğe bağlı.
 - Qwen3 embedding indeksi (13.236 parça), seçili Vikipedi listesi, MedlinePlus.
 
-### Yerel PC'de çalıştırma
-
-`bash scripts/local/kur.sh` (Windows: `.\scripts\local\kur.ps1`) sanal ortamı kurar ve `.env` oluşturur. Anahtar dosyaya yazılmaz, `EVREN_API_KEY` ortam değişkeni olarak verilir. Claude Code'u Evren API ile kullanmak için `scripts/local/litellm.yaml` içindeki adımlara bak.
+Ayrıntılı yol haritası ve sözleşmeler: [`PLAN.md`](PLAN.md). Geliştirme kayıtları: `docs/gelistirme-kayitlari/`.

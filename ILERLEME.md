@@ -47,3 +47,10 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - Tıbbi inceleme: labs referans aralıkları ve D'nin 'çocukta hafif ateş' beklenen aralığı (home..today) kullanıcı onayı bekliyor.
 - Anahtar yoksa deps.get_retriever RuntimeError ile 500 veriyor; düzgün hata mesajı eklenebilir.
 - Test: 407 geçti, 1 atlandı, ruff temiz (F birleşiminden sonra).
+
+## 17.10.2026 son tur
+- Düzeltildi: anahtar yokken 503 (`ConfigError`), NIH ODS isteğe bağlı kaynak, tahlilde rapor aralığı önceliği + hekim notu,
+  5 yaş altı ateş kuralı, varsayılan model `deepseek-v4.1-flash`, worktree/yama temizliği.
+- Docker imajı derlendi ve duman testinden geçti (healthy, root değil).
+- README baştan yazıldı (mimari ve arama grafiği SVG, 12 arayüz görüntüsü `docs/screens/ui/`, model/teknoloji/kaynak/karar tabloları).
+- PLAN.md devir notu güncellendi. Test: 420 geçti, ruff temiz.

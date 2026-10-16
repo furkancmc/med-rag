@@ -152,19 +152,22 @@ kaynağın kullanım sınırlarına saygılı eşzamanlılık ve 429'da geri çe
 - Testlerde LLM ve embedding sahte servislerle; gerçek API testleri Actions'ta.
 - Anahtarlar asla repoya yazılmaz.
 
-## Devir notu (yeni oturumda devam etmek için)
+## Devir notu (yeni oturumda devam etmek için) — güncel: 17.10.2026
 
-- Çalışma dalı: `ccr-fc8175dc-sqyb1k`. Her şey bu dalda; `main` dalı yok/kullanılmıyor.
-- Faz 2 iş akışları (A–G) paralel ajanlarla yürütülüyor. Ajanlar bitince dalları bu dala birleştirilir.
-  Birleştirme bitmeden oturum kapanırsa ajanların yerel işleri kaybolur; bu durumda ilgili iş akışı
-  yukarıdaki tanıma göre yeniden yapılır.
-- Gerçek API testleri yalnızca GitHub Actions'ta çalışır (geliştirme ortamı Evren API'ye erişemez).
-  `EVREN_API_KEY` repo ayarlarında Actions secret olarak tanımlıdır.
-- Birleştirme sonrası sıra: `pytest` + `ruff` → `Veri çek` → `İndeks oluştur (API)` → `Arama değerlendirmesi`
-  → `Güvenlik ve uçtan uca test` → yeni sayfaların değerlendirmeleri (assess, labs, platform) → `Ekran görüntüsü`
-  → README ve değişiklik günlüğü güncellemesi.
-- Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir.
-
-## Yerelde devam (görev tarifleri)
-
-Her workstream'in ayrıntılı görev tarifi `docs/gorevler/{A..G}.md` içinde. Yarım kalan işlerin yamaları `checkpoints/*.patch` dosyalarında (uygulamak için `git apply checkpoints/<dosya>.patch`). Yerelde bir ajana şunu ver: "PLAN.md ve docs/gorevler/<harf>.md dosyasını oku, o görevi yap."
+- Çalışma dalı: `ccr-fc8175dc-sqyb1k`. Faz 2 iş akışları **A–G tamamlandı ve bu dala birleştirildi**
+  (420 test geçiyor, ruff temiz). Ajan dalları ve yedek yamalar silindi; ajanların ilerleme notları
+  `docs/gelistirme-kayitlari/` altında. Genel durum ve karar günlüğü: `ILERLEME.md` ve `README.md` (bölüm 1 ve 17).
+- Tüm LLM görevleri `deepseek-v4.1-flash` ile çalışır (`MEDRAG_LLM_MODEL`). **`qwen3-embedding-8b` ve
+  `qwen3-reranker-8b` ile gerçek çağrılar masraf nedeniyle durduruldu**; reranker varsayılan kapalı.
+- **Ertelenen işler (sırayla):**
+  1. Yeni ~19.500 parça için embedding indeksi: önce `Veri çek` ile ham veriyi repoya al, sonra
+     `python -m medrag.index embed --trust-legacy` (ilk geçişte; sonra artımlı).
+  2. Arama ölçümü (`python -m medrag.eval run`); rerank açılacaksa havuzu 10–15, metni ~600 karaktere indir.
+  3. Gerçek vektör aramayla güvenlik ve belirti senaryoları; `eval/safety_results.md` 40 senaryoyla yenilenmeli.
+  4. Ses tanıma (`qwen3-asr-1.7b`) gerçek sesle denemesi: `Platform` workflow'u.
+  5. Tahlil OCR'ı gerçek telefon fotoğraflarıyla ölçmek.
+- **Tıbbi inceleme bekleyen konular:** tahlil referans aralıkları/kritik eşikler (`labs/reference.py`) ve belirti kuralları
+  bir hekim tarafından gözden geçirilmeli. Sistem raporda yazan referans aralığını önceler; yoksa hekime yönlendirir.
+- Gerçek API testleri yerelde de çalışır (anahtar `phone/.env` içinde, gitignore'da) ya da Actions'ta
+  (`EVREN_API_KEY` Actions secret).
+- Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir. Anahtarlar asla repoya yazılmaz.
