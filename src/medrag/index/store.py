@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +19,7 @@ def build_vectors(chunks: list[dict], embedder: Embedder, batch: int = 256) -> n
     for i in range(0, len(chunks), batch):
         texts = [passage_text(c) for c in chunks[i : i + batch]]
         parts.append(embedder.encode_passages(texts))
-        print(f"embedding: {min(i + batch, len(chunks))}/{len(chunks)}", flush=True)
+        print(f"{time.strftime('%H:%M:%S')} embedding: {min(i + batch, len(chunks))}/{len(chunks)}", flush=True)
     return np.vstack(parts) if parts else np.zeros((0, 0), dtype=np.float32)
 
 
