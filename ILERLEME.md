@@ -21,7 +21,7 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - [x] D Belirti: birleştirildi (81ec7a1)
 - [x] E Tahlil: birleştirildi (650560e)
 - [x] F Sunucu: birleştirildi (86643d3); hız sınırı, erişim kodu, feedback, meta, speech, Docker; platform workflow Actions'ta doğrulanacak
-- [~] G Arayüz: ajan başlatıldı (a47ffd...), önceki CSS yaması ile başlıyor
+- [x] G Arayüz: birleştirildi (490cc07); D/E sayfaları ortak başlığa, manifest ve tema düğmesine uyduruldu; Edge ile 390 px QA temiz (4 sayfa, açık/koyu)
 
 ## Notlar
 - `config.py` `llm_model` varsayılanı `auto`; `deepseek-v4.1-flash` için `MEDRAG_LLM_MODEL` ile geçilebilir.
@@ -41,7 +41,7 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - Birleştirme sonrası her turda: pytest + ruff + git status + commit.
 
 ## Bekleyenler / geri dönülecekler
-- G Arayüz ajanı sürüyor (birleştirilecek).
+- Tüm iş akışları (A-G) birleşti. Test: 414 geçti, ruff temiz.
 - ERTELENEN (8b embedding/rerank masrafı): yeni ~19.500 parça için indeks kurulumu (`index embed`, artımlı; ilk geçişte `--trust-legacy`), arama ve rerank ölçümü (A), retrieval-check, kaynaklı uçtan uca testler (D/E), vektör aramayla güvenlik koşusu (C).
 - Rerank maliyeti: soru başına ~40 doküman x ~450 token; açarken pool 10-15 ve metin ~600 karakter öner.
 - Tıbbi inceleme: labs referans aralıkları ve D'nin 'çocukta hafif ateş' beklenen aralığı (home..today) kullanıcı onayı bekliyor.
