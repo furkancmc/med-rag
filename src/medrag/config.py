@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     rerank_doc_chars: int = 1500  # rerank'e giden metin uzunluğu (4096 token bağlamına sığsın)
     # Çoklu sorgu: İngilizce çeviri + 1-2 Türkçe yeniden yazım, RRF ile birleşir (ölçülene kadar kapalı).
     multiquery_enabled: bool = False
-    multiquery_model: str = "auto"
+    multiquery_model: str = "auto"  # deepseek düşünürken 8-22 sn sürüyor; hızlı yönlendirici seçildi
     multiquery_timeout: float = 15.0  # saniye; aşılırsa sadece orijinal sorgu kullanılır
     multiquery_original_weight: float = 1.0  # RRF'de orijinal sorgunun ağırlığı
 
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
 
     # --- Sohbet ve güvenlik (iş akışı C) ---
     llm_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
-    llm_model: str = "auto"
+    llm_model: str = "deepseek-v4.1-flash"
     llm_extra_params: str = ""  # JSON; cevap modeline her isteğe eklenir (örn. düşünmeyi kapatma)
     answer_max_tokens: int = 4096  # düşünen modeller token harcar; cömert tutulur
     # Çalışma anında cevap doğrulama
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     classifier_timeout_seconds: float = 8.0
 
     # --- Belirti değerlendirme (iş akışı D) ---
-    assess_model: str = "auto"  # değerlendirmeden sonra örn. "deepseek-v4.1-flash" yapılabilir
+    assess_model: str = "deepseek-v4.1-flash"
     assess_temperature: float = 0.2
     assess_max_tokens: int = 4000  # düşünen modeller için cömert
     assess_sources_k: int = 4

@@ -3,7 +3,7 @@ from medrag.config import Settings
 
 def test_defaults():
     s = Settings(_env_file=None)
-    assert s.llm_model == "auto"
+    assert s.llm_model == "deepseek-v4.1-flash"
     assert s.embed_dimensions == 1024
     assert s.top_k == 5
 

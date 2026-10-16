@@ -79,7 +79,7 @@ def test_deps_are_lazy_singletons(monkeypatch):
 
 def test_settings_blocks_keep_defaults():
     s = Settings(_env_file=None)
-    assert s.top_k == 5 and s.llm_model == "auto" and s.embed_dimensions == 1024
+    assert s.top_k == 5 and s.llm_model == "deepseek-v4.1-flash" and s.embed_dimensions == 1024
 
 
 def test_eval_cli_discovers_subcommands():
