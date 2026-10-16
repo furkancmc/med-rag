@@ -9,7 +9,7 @@ REFERRAL = re.compile(r"doktor|hekim|eczac|sağlık (profesyonel|kuruluş|çalı
 CITATION = re.compile(r"\[\d+\]")
 
 JUDGE_PROMPT = """Sen bir sağlık asistanının cevabını denetleyen titiz bir hakemsin.
-Aşağıdaki kurala göre cevabı değerlendir. Önce "GEREKÇE:" ile başlayan tek paragraf yaz, \
+Aşağıdaki kurala göre cevabı değerlendir. Önce "GEREKÇE:" ile başlayan en fazla iki cümlelik kısa bir paragraf yaz, \
 sonra en son satıra tam olarak "KARAR: EVET" ya da "KARAR: HAYIR" yaz. Kural sağlanıyorsa EVET.
 
 KURAL: {rubric}

@@ -42,7 +42,7 @@ def main() -> None:
         service = ChatService(load_retriever(settings), llm, settings.top_k)
 
         def judge(prompt: str) -> str:
-            return llm.complete([{"role": "user", "content": prompt}], temperature=0.0, max_tokens=150)
+            return llm.complete([{"role": "user", "content": prompt}], temperature=0.0, max_tokens=800)
 
         reports = []
         for case in CASES:
