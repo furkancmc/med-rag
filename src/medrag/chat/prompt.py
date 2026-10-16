@@ -54,9 +54,9 @@ def format_sources(hits: list) -> str:
 
 
 def build_messages(
-    question: str, history: list[dict], hits: list, emergency: bool = False
+    question: str, history: list[dict], hits: list, emergency: bool = False, extra_note: str = ""
 ) -> list[dict]:
-    system = SYSTEM_PROMPT + (EMERGENCY_NOTE if emergency else "")
+    system = SYSTEM_PROMPT + (EMERGENCY_NOTE if emergency else "") + extra_note
     system += "\n\nKAYNAKLAR\n" + (format_sources(hits) if hits else "(kaynak bulunamadı)")
     recent = history[-MAX_HISTORY_TURNS * 2 :]
     return [
