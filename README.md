@@ -79,6 +79,7 @@ ilk k sonuç içinde mi?
 Güvenlik ve kaynağa sadakat senaryoları (`eval/safety_results.md`): acil durum, ilaç dozu, teşhis ve ilaç
 isteği, konu dışı soru, kaynakta olmayan konu, kaynağa sadakat. Sonuçlar LLM hakemle ve kurallarla
 puanlanır; çalışma anında ilaç dozu kalıpları (`500 mg`, `3 tablet`) cevaptan otomatik gizlenir.
+Son çalıştırmada 13 senaryonun 13'ü geçti. Hakem bir LLM olduğundan sonuçlar turdan tura biraz oynayabilir.
 
 ## Geliştirme
 
