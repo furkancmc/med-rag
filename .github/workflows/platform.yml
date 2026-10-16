@@ -1,0 +1,33 @@
+name: platform
+on:
+  workflow_dispatch:
+
+jobs:
+  speech:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y espeak-ng
+      - run: pip install -e .
+      - name: Ses tanıma tanısı (gerçek API)
+        env:
+          EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+        run: python -m medrag.eval platform
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t medrag .
+      - name: Dumanlı test
+        run: |
+          docker run -d --name medrag -p 8000:8000 medrag
+          for i in $(seq 1 30); do curl -fs http://localhost:8000/health && break; sleep 2; done
+          curl -fs http://localhost:8000/health
+          curl -fs -o /dev/null http://localhost:8000/
+          curl -fsI http://localhost:8000/ | grep -i content-security-policy
+          curl -fs http://localhost:8000/api/meta/info
+          docker logs medrag | tail -n 20

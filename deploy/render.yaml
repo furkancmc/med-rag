@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: medrag
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    plan: starter
+    envVars:
+      - key: EVREN_API_KEY
+        sync: false
+      - key: MEDRAG_TRUST_PROXY_HEADERS
+        value: "1"
+      - key: MEDRAG_HSTS
+        value: "1"
+      - key: MEDRAG_WARMUP
+        value: "1"
+      - key: MEDRAG_ACCESS_CODE
+        sync: false
+    # Geri bildirimin kalıcı olması için disk ekleyin (ücretli planlarda):
+    disk:
+      name: feedback
+      mountPath: /app/data/feedback
+      sizeGB: 1

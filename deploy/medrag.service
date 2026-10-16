@@ -1,0 +1,19 @@
+# /etc/systemd/system/medrag.service — Docker'sız kurulum (python venv: /opt/medrag/.venv)
+[Unit]
+Description=medrag
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=medrag
+WorkingDirectory=/opt/medrag
+EnvironmentFile=/etc/medrag.env
+Environment=MEDRAG_TRUST_PROXY_HEADERS=1
+ExecStart=/opt/medrag/.venv/bin/uvicorn medrag.api.main:app --host 127.0.0.1 --port 8000 --proxy-headers
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/opt/medrag/data
+
+[Install]
+WantedBy=multi-user.target
