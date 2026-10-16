@@ -6,10 +6,12 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 USER_AGENT = "medrag/0.1 (https://github.com/furkancmc/phone; egitim amacli RAG projesi)"
-WIKI_DELAY = 1.0  # Vikipedi istekleri arasında saniye
+WIKI_DELAY = 0.3  # her bağlantı kendi isteğinden önce bu kadar bekler
+WIKI_WORKERS = 3  # paralel bağlantı sayısı; 429 gelirse http_get zaten bekleyip tekrar dener
 MEDLINE_INDEX = "https://medlineplus.gov/xml.html"
 MEDLINE_TOPICS = re.compile(r'href="([^"]*mplus_topics_\d{4}-\d{2}-\d{2}\.xml)"')
 
@@ -142,8 +144,8 @@ def fetch_extracts(
     lang: str, titles: list[str], get: Callable[[str], bytes] = wiki_get
 ) -> list[dict]:
     """Tam metin (intro dışı) için Vikipedi sayfa başına tek istek kabul ediyor."""
-    pages = []
-    for title in titles:
+
+    def fetch_one(title: str) -> list[dict]:
         params = {
             "action": "query",
             "prop": "extracts",
@@ -152,8 +154,10 @@ def fetch_extracts(
             "titles": title,
         }
         data = json.loads(get(wiki_api(lang, params)))
-        pages.extend(data.get("query", {}).get("pages", []))
-    return pages
+        return data.get("query", {}).get("pages", [])
+
+    with ThreadPoolExecutor(max_workers=WIKI_WORKERS) as pool:
+        return [page for pages in pool.map(fetch_one, titles) for page in pages]
 
 
 def search_categories(lang: str, query: str, get: Callable[[str], bytes] = wiki_get) -> list[str]:
