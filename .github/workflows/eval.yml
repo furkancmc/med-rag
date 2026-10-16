@@ -1,14 +1,42 @@
 name: Arama değerlendirmesi
 
-# Evren API ile test soruları üretir (yoksa) ve bm25 / vector / hybrid yöntemlerini karşılaştırır.
+# Evren API ile test soruları üretir (yoksa ya da istenirse) ve arama yöntemlerini karşılaştırır:
+# bm25, vektör, vektör + rerank (havuz 20/40), çoklu sorgu + vektör / rerank.
 # Sadece elle çalıştırılır. Önce "İndeks oluştur (API)" workflow'u bitmiş olmalı.
+# Sonuçlar eval/results.md ve eval/results.json olarak commit'lenir (rerank/genişletme çağrılarının
+# çoğu başarısız olursa iş kırmızı biter, ama sonuçlar yine de commit'lenir).
 on:
   workflow_dispatch:
     inputs:
+      n:
+        description: "Soru sayısı (yalnızca soruları yeniden üretirken kullanılır)"
+        type: string
+        default: "500"
       regenerate:
         description: "Soruları yeniden üret"
         type: boolean
         default: false
+      methods:
+        description: "Yöntemler, virgülle (all = bm25,vector,rerank20,rerank40,rerank40-none,mq-vector,mq-rerank; hybrid ve rerank<N> da olur)"
+        type: string
+        default: "all"
+      limit:
+        description: "Sadece N soruyla ölç (0 = hepsi; hızlı deneme için 30 gibi)"
+        type: string
+        default: "0"
+      latency_n:
+        description: "Sıralı gecikme ölçümünde soru sayısı (0 = gecikme ölçme)"
+        type: string
+        default: "20"
+      rerank_template:
+        description: "Rerank şablonu (default = ayardaki varsayılan, qwen3)"
+        type: choice
+        options: ["default", "qwen3", "none"]
+        default: "default"
+      mq_original_weight:
+        description: "Çoklu sorguda orijinal sorgunun RRF ağırlığı (boş = 1)"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -16,9 +44,15 @@ permissions:
 jobs:
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
+      N: ${{ inputs.n }}
+      METHODS: ${{ inputs.methods }}
+      LIMIT: ${{ inputs.limit }}
+      LATENCY_N: ${{ inputs.latency_n }}
+      RERANK_TEMPLATE: ${{ inputs.rerank_template }}
+      MQ_ORIGINAL_WEIGHT: ${{ inputs.mq_original_weight }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,13 +62,22 @@ jobs:
       - run: python -m medrag.ingest build
       - name: Soruları üret
         if: ${{ inputs.regenerate || hashFiles('eval/queries.jsonl') == '' }}
-        run: python -m medrag.eval gen --n 150
-      - run: python -m medrag.eval run
+        run: python -m medrag.eval gen --n "${N:-500}" --workers 16
+      - name: Reranker ve genişletme ön kontrolü
+        run: python -m medrag.eval retrieval-check
+        continue-on-error: true
+      - name: Yöntemleri karşılaştır
+        run: |
+          args=(--methods "${METHODS:-all}" --limit "${LIMIT:-0}" --latency-n "${LATENCY_N:-20}")
+          if [ -n "$RERANK_TEMPLATE" ] && [ "$RERANK_TEMPLATE" != "default" ]; then args+=(--rerank-template "$RERANK_TEMPLATE"); fi
+          if [ -n "$MQ_ORIGINAL_WEIGHT" ]; then args+=(--mq-original-weight "$MQ_ORIGINAL_WEIGHT"); fi
+          python -m medrag.eval run "${args[@]}"
       - name: Sonuçları commit'le
+        if: ${{ always() }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add eval/queries.jsonl eval/results.md
+          git add -A eval/
           git commit -m "Arama değerlendirme sonuçları" || exit 0
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
