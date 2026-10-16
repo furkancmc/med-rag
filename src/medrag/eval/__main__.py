@@ -62,9 +62,14 @@ def main() -> None:
         retriever.embedder = CachingEmbedder(retriever.embedder)
         queries = load_queries(QUERIES_PATH)
         results = {}
-        for mode in ("bm25", "vector", "hybrid"):
-            results[mode] = evaluate(
-                queries, lambda q, m=mode: [h.chunk for h in retriever.search(q, k=10, mode=m)]
+        runs = [("bm25", "bm25", 0.0), ("vector", "vector", 0.0)]
+        runs += [(f"hybrid (bm25 ağırlığı {w})", "hybrid", w) for w in (0.05, 0.1, 0.2, 0.3, 0.5, 1.0)]
+        for name, mode, weight in runs:
+            results[name] = evaluate(
+                queries,
+                lambda q, m=mode, w=weight: [
+                    h.chunk for h in retriever.search(q, k=10, mode=m, bm25_weight=w)
+                ],
             )
         table = format_table(results)
         print(table)

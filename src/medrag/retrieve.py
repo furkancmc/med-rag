@@ -11,6 +11,8 @@ from .index.tokenize import tokenize
 from .ingest.build import build_chunks
 
 RRF_K = 60  # sıralama birleştirmede standart sabit
+# Ölçümde BM25 tek başına zayıf (Türkçe soru, İngilizce kaynak): vektöre göre düşük ağırlık verilir.
+DEFAULT_BM25_WEIGHT = 0.3
 
 
 @dataclass
@@ -39,16 +41,27 @@ class Retriever:
         top = np.argpartition(-scores, min(n, len(scores) - 1))[:n]
         return [int(i) for i in top[np.argsort(-scores[top])]]
 
-    def search(self, query: str, k: int = 5, mode: str = "hybrid", pool: int = 50) -> list[Hit]:
+    def search(
+        self,
+        query: str,
+        k: int = 5,
+        mode: str = "hybrid",
+        pool: int = 50,
+        bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    ) -> list[Hit]:
         if mode == "bm25":
             ranked = [(i, 1.0) for i in self._bm25_ranking(query, k)]
         elif mode == "vector":
             ranked = [(i, 1.0) for i in self._vector_ranking(query, k)]
         elif mode == "hybrid":
             fused: dict[int, float] = {}
-            for ranking in (self._bm25_ranking(query, pool), self._vector_ranking(query, pool)):
+            rankings = (
+                (self._bm25_ranking(query, pool), bm25_weight),
+                (self._vector_ranking(query, pool), 1.0),
+            )
+            for ranking, weight in rankings:
                 for rank, i in enumerate(ranking):
-                    fused[i] = fused.get(i, 0.0) + 1.0 / (RRF_K + rank + 1)
+                    fused[i] = fused.get(i, 0.0) + weight / (RRF_K + rank + 1)
             ranked = sorted(fused.items(), key=lambda x: x[1], reverse=True)[:k]
         else:
             raise ValueError(f"bilinmeyen mod: {mode}")

@@ -43,3 +43,11 @@ def test_hybrid_combines_both_rankings():
 def test_unknown_mode():
     with pytest.raises(ValueError):
         make().search("x", mode="yok")
+
+
+def test_bm25_weight_controls_influence():
+    r = make()
+    # "ateş" sadece BM25'te d2'yi bulur; vektör d1'i en üste koyar.
+    low = [h.chunk["id"] for h in r.search("ateş", k=1, mode="hybrid", bm25_weight=0.01)]
+    high = [h.chunk["id"] for h in r.search("ateş", k=1, mode="hybrid", bm25_weight=5.0)]
+    assert low == ["d1#0"] and high == ["d2#0"]
