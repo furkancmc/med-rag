@@ -30,6 +30,7 @@ Görüntüler gerçek uygulamadan, telefon genişliğinde (390 px) alınmıştı
 12. [Sorun giderme](#sorun-giderme)
 13. [Sınırlar](#sınırlar)
 14. [Yol haritası](#yol-haritası)
+15. [Değişiklik günlüğü](#değişiklik-günlüğü)
 
 ## Özellikler
 
@@ -259,9 +260,13 @@ src/medrag/
   ingest/                veri hattı: indirme, ayrıştırma, parçalama, seçili Vikipedi listesi
   index/                 BM25, Türkçe metin ayrıştırıcı, embedding istemcisi, vektör deposu
   chat/                  acil durum, prompt, doz filtresi, sohbet servisi
-  api/                   FastAPI uygulaması
-  web/index.html         sohbet sayfası (tek dosya)
-  eval/                  arama ve güvenlik değerlendirmesi
+  deps.py                paylaşılan, tembel yüklenen bağımlılıklar (retriever, LLM, sohbet servisi)
+  api/main.py            uygulama: sayfalar, statik dosyalar, /chat, özellik rotalarını otomatik ekler
+  api/routes/            özellik rotaları (her modül bir `router`; otomatik bulunur)
+  api/middleware.py      sunucu ara katmanları
+  web/index.html         sohbet sayfası; diğer sayfalar web/<ad>.html → /<ad>
+  web/static/            ortak tasarım sistemi (base.css) ve yardımcılar (common.js)
+  eval/                  değerlendirmeler; her *_cli.py modülü kendi alt komutunu ekler
 data/raw/                indirilmiş ham kaynaklar (repoda)
 data/index_qwen3/        embedding indeksi (repoda)
 eval/                    test soruları ve sonuç raporları
@@ -283,6 +288,14 @@ ruff check .
 - Prompt ya da güvenlik kodunu değiştirince `Güvenlik ve uçtan uca test` workflow'unu çalıştır.
 - Veri ya da parçalama değişirse embedding indeksini yeniden üret.
 - Commit mesajları kısa ve sade Türkçe yazılır.
+- **Yeni özellik eklemek:** `src/medrag/api/routes/<ad>.py` içinde `router = APIRouter(prefix="/api/<ad>")`
+  tanımla; `api/main.py` onu kendiliğinden ekler. Bağımlılıklar için `Depends(deps.get_llm)` ve
+  `Depends(deps.get_retriever)` kullan; testte `app.dependency_overrides` ile sahtesini ver.
+- **Yeni sayfa eklemek:** `src/medrag/web/<ad>.html` dosyası `/<ad>` adresinden sunulur. `/static/base.css`
+  sınıflarını ve `/static/common.js` (`window.MedRAG`) yardımcılarını kullan; `<nav id="app-nav"></nav>`
+  koy, alt gezinme kendiliğinden çizilir.
+- **Yeni değerlendirme eklemek:** `src/medrag/eval/<ad>_cli.py` içinde `register(subparsers)` yaz;
+  `python -m medrag.eval <komut>` olarak görünür.
 
 ## Sorun giderme
 
@@ -310,10 +323,29 @@ ruff check .
 
 ## Yol haritası
 
-Planlanan ve düşünülen geliştirmeler için [`PLAN.md`](PLAN.md) dosyasına bak.
+Faz 2 sürüyor (ayrıntılar [`PLAN.md`](PLAN.md)): reranker ve çoklu sorgu, güncel ve kaliteli yeni kaynaklar
+(Europe PMC, openFDA, NIH ODS, genişletilmiş Vikipedi), çalışma anında cevap doğrulama, ikinci katman acil durum
+sınıflandırıcı, yeni sayfalar (Belirti Değerlendirme, Tahlil Yorumu, Hakkında), fotoğraftan tahlil ve ilaç kutusu
+okuma, sesle soru sorma, modern arayüz ve PWA, hız sınırı ve barındırma hazırlığı.
 
 ## Yasal uyarı
 
 Bu proje bir eğitim ve araştırma çalışmasıdır. Ürettiği bilgiler **genel bilgilendirme** amaçlıdır; tıbbi tavsiye,
 teşhis ya da tedavi yerine geçmez. Sağlık sorunlarınız için bir sağlık profesyoneline başvurun. Acil durumda
 **112**'yi arayın.
+
+## Değişiklik günlüğü
+
+### Faz 2 (devam ediyor)
+- Paralel geliştirme için modüler iskelet: özellik rotaları `api/routes/` altında otomatik bulunur, sayfalar
+  `web/<ad>.html` olarak eklenir, ortak tasarım sistemi `web/static/` altında, ayarlar iş akışı bloklarına ve
+  değerlendirme komutları `*_cli.py` modüllerine bölündü. Sohbet `/api/chat` adresinden de çalışır.
+- Evren API model listesi çıkarıldı: reranker (`qwen3-reranker-8b`), OCR (`deepseek-ocr-2`, `dots-ocr`), görsel
+  (`qwen3-vl-30b`), ses tanıma (`qwen3-asr-1.7b`), güvenlik sınıflandırıcı (`qwen3-guard-4b`) ve daha güçlü sohbet
+  modelleri mevcut (`PLAN.md`).
+
+### Faz 1
+- Doz içeren cümle artık tek bir açıklama cümlesiyle değiştiriliyor; acil cevapta hastalık adı verilmemesi kuralı.
+- Gerçek API ile ekran görüntüleri (`docs/screens/`), güvenlik senaryoları 13/13.
+- Vektör arama varsayılan oldu (ölçüm: recall@5 0,85); hybrid ve BM25 isteğe bağlı.
+- Qwen3 embedding indeksi (13.236 parça), seçili Vikipedi listesi, MedlinePlus.
