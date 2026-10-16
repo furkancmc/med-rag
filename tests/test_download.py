@@ -1,4 +1,5 @@
 import json
+import urllib.parse
 
 import pytest
 
@@ -103,3 +104,20 @@ def test_search_categories():
         return json.dumps({"query": {"search": [{"title": "Kategori:Hastalıklar"}]}}).encode()
 
     assert search_categories("tr", "hastalık", get=get) == ["Kategori:Hastalıklar"]
+
+
+def test_curated_download_reports_missing_and_dedupes(tmp_path):
+    answers = {
+        "Diyabet": {"pageid": 1, "title": "Diyabet", "extract": "metin"},
+        "Şeker hastalığı": {"pageid": 1, "title": "Diyabet", "extract": "metin"},  # yönlendirme
+        "Yok": {"pageid": 0, "title": "Yok", "missing": True},
+    }
+
+    def get(url):
+        title = next(t for t in answers if urllib.parse.quote_plus(t) in url)
+        return json.dumps({"query": {"pages": [answers[title]]}}).encode()
+
+    titles = ["Diyabet", "Şeker hastalığı", "Yok"]
+    path = download_wikipedia(tmp_path, "tr", titles=titles, get=get)
+    rows = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()]
+    assert [r["title"] for r in rows] == ["Diyabet"]

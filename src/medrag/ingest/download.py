@@ -176,23 +176,38 @@ def search_categories(lang: str, query: str, get: Callable[[str], bytes] = wiki_
 def download_wikipedia(
     raw_dir: Path,
     lang: str,
-    categories: list[str],
+    categories: list[str] | None = None,
     limit: int = 500,
     depth: int = 1,
     get: Callable[[str], bytes] = wiki_get,
+    titles: list[str] | None = None,
 ) -> Path:
-    titles: list[str] = []
-    for cat in categories:
-        titles += category_titles(lang, cat, get=get, depth=depth, limit=limit)
-    titles = list(dict.fromkeys(titles))[:limit]
+    """Verilen başlıkları ya da kategorilerdeki makaleleri indirir."""
+    if titles is None:
+        titles = []
+        for cat in categories or []:
+            titles += category_titles(lang, cat, get=get, depth=depth, limit=limit)
+        titles = list(dict.fromkeys(titles))[:limit]
     if not titles:
-        raise RuntimeError(f"{lang} için kategorilerde makale bulunamadı: {categories}")
-    print(f"{lang}: {len(titles)} makale başlığı bulundu")
+        raise RuntimeError(f"{lang} için indirilecek makale bulunamadı: {categories}")
+    print(f"{lang}: {len(titles)} başlık isteniyor")
     pages = fetch_extracts(lang, titles, get=get)
+
+    kept, seen, missing = [], set(), []
+    for page in pages:
+        if "missing" in page or not (page.get("extract") or "").strip():
+            missing.append(page.get("title", "?"))
+        elif page["pageid"] not in seen:  # iki başlık aynı sayfaya yönlenebilir
+            seen.add(page["pageid"])
+            kept.append(page)
+    print(f"{lang}: {len(kept)} makale alındı, {len(missing)} bulunamadı")
+    if missing:
+        print("bulunamayanlar:", "; ".join(missing))
+
     out_dir = raw_dir / "wikipedia"
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{lang}.jsonl"
     with path.open("w", encoding="utf-8") as f:
-        for page in pages:
+        for page in kept:
             f.write(json.dumps(page, ensure_ascii=False) + "\n")
     return path

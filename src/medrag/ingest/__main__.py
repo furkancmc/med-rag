@@ -3,6 +3,7 @@ import argparse
 from medrag.config import get_settings
 
 from .build import build_chunks
+from .curated import curated_titles
 from .download import (
     DEFAULT_CATEGORIES,
     download_medlineplus,
@@ -19,6 +20,7 @@ def main() -> None:
 
     wiki = sub.add_parser("wikipedia", help="Vikipedi tıp makalelerini indir")
     wiki.add_argument("--lang", choices=["tr", "en"], default="tr")
+    wiki.add_argument("--curated", action="store_true", help="elle seçilmiş konu listesini indir")
     wiki.add_argument("--category", action="append", help="birden fazla verilebilir")
     wiki.add_argument("--limit", type=int, default=500)
     wiki.add_argument("--depth", type=int, default=1)
@@ -38,8 +40,13 @@ def main() -> None:
         for title in search_categories(args.lang, args.query):
             print(title)
     elif args.cmd == "wikipedia":
-        cats = args.category or DEFAULT_CATEGORIES[args.lang]
-        path = download_wikipedia(data_dir / "raw", args.lang, cats, args.limit, args.depth)
+        if args.curated:
+            path = download_wikipedia(
+                data_dir / "raw", args.lang, titles=curated_titles(args.lang)
+            )
+        else:
+            cats = args.category or DEFAULT_CATEGORIES[args.lang]
+            path = download_wikipedia(data_dir / "raw", args.lang, cats, args.limit, args.depth)
         print("yazıldı:", path)
     else:
         print("chunk sayısı:", build_chunks(data_dir))
