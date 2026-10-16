@@ -14,13 +14,13 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - [x] Repo ve görev tarifleri okundu (PLAN.md, docs/gorevler/A-G.md)
 - [x] API anahtarı `phone/.env` içinde (gitignore'da), `MEDRAG_LLM_MODEL=deepseek-v4.1-flash`
 - [x] Bağlantı testi başarılı (1.8 sn, model deepseek/deepseek-v4.1-flash, düşünme tokenları 'reasoning' alanında, kalan kredi ~1062)
-- [~] A Arama: yama (checkpoints/agent-aefdbaf...) uygulandı, 124 test + ruff temiz; gerçek API doğrulaması sırada
+- [x] A Arama: ana dala commit edildi (b143fd5); rerank varsayılan kapalı; ölçüm ertelendi (8b yasağı)
   (A ana ağaç yedeği: checkpoints/ana-agac-A.patch)
 - [ ] B Veri
-- [ ] C Güvenlik
-- [x] D Belirti: dal worktree-agent-a97069d27386b29fc, commit 81ec7a1, 113 test + ruff temiz; birleştirme bekliyor
-- [x] E Tahlil: dal worktree-agent-a6c906b7fe71944a4, commit 650560e, 195 test + ruff temiz; birleştirme bekliyor
-- [ ] F Sunucu
+- [x] C Güvenlik: birleştirildi (62277d0), 40 senaryo 40/40 (BM25)
+- [x] D Belirti: birleştirildi (81ec7a1)
+- [x] E Tahlil: birleştirildi (650560e)
+- [~] F Sunucu: ajan başlatıldı
 - [~] G Arayüz: ajan başlatıldı (a47ffd...), önceki CSS yaması ile başlıyor
 
 ## Notlar
@@ -35,3 +35,7 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - Masraf nedeniyle `qwen3-embedding-8b` ve `qwen3-reranker-8b` ÇAĞRILMAZ. Tüm LLM işleri `deepseek-v4.1-flash`.
 - `rerank_enabled` varsayılanı False. Embedding/rerank gerektiren işler (indeks yeniden kurma, arama ölçümü, retrieval-check) ERTELENDİ, sonra devam.
 - A ölçümü durduruldu (eval/results.md güncellenmedi).
+
+## Git durumu
+- Ana dal: A, D, E, C birleştirildi; 354 test geçti, ruff temiz. B ve G sürüyor, F başlıyor.
+- Birleştirme sonrası her turda: pytest + ruff + git status + commit.
