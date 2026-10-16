@@ -110,6 +110,25 @@ birleştirilir. Çakışmayı önlemek için dosya sahipliği:
   (`{"type": "verification", "checked": n, "unsupported": [{"sentence": str, "reason": str}]}`),
   `done`, `error`.
 - **Geri bildirim:** `POST /api/feedback` `{"rating": 1 | -1, "page": str, "question": str?, "answer": str?, "comment": str?}`.
+- **Hakkında bilgisi:** `GET /api/meta/info` → `{"version", "sources": [{"source", "license", "documents", "chunks"}], "models": {...}, "eval": {...}}`.
+- **Erişim kodu (isteğe bağlı):** `MEDRAG_ACCESS_CODE` tanımlıysa `/chat` ve `/api/*` istekleri `X-Access-Code`
+  başlığı ister; yoksa `401 {"error": "access_code_required"}`. Sayfalar, statik dosyalar, `/health` ve
+  `/api/meta/info` açıktır. `common.js` kodu bir kez sorar, tarayıcıda saklar ve her isteğe ekler.
+- **Ses:** `POST /api/speech/transcribe` (multipart, alan adı `file`) → `{"text": str}`; model `qwen3-asr-1.7b`.
+- **Görsel:** `POST /api/vision/lab-report` ve `POST /api/vision/medicine` (multipart, alan adı `file`).
+- **`common.js` ek yardımcılar:** `toast(message)`, `uploadFile(url, file, fields)`.
+
+## Evren API modelleri (GET /v1/models, 16.10.2026)
+
+| Görev | Model |
+|---|---|
+| Embedding | `qwen3-embedding-8b` |
+| Rerank | `qwen3-reranker-8b` (`POST /v1/rerank`) |
+| Sohbet | `auto` (qwen3-vl-30b-a3b'ye yönlenir), `deepseek-v4-flash`, `deepseek-v4.1-flash`, `glm-5.3`, `qwen3.8-flash-next`, `mimo-v2.6-pro`, `gemma-4-31b` |
+| Görsel sohbet | `qwen3-vl-30b` |
+| OCR | `deepseek-ocr-2`, `dots-ocr` |
+| Ses tanıma | `qwen3-asr-1.7b` |
+| Güvenlik sınıflandırıcı | `qwen3-guard-4b` |
 
 ## Test düzeni
 
