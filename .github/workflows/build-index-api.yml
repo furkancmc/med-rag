@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .
       - run: python -m medrag.ingest build
-      - run: python -m medrag.index embed --provider api --index-dir data/index_qwen3
+      - run: python -m medrag.index embed --index-dir data/index_qwen3
         env:
           EVREN_API_KEY: ${{ secrets.EVREN_API_KEY }}
       - name: İndeksi commit'le

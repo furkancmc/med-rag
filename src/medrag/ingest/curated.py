@@ -1,16 +1,17 @@
 """Elle seçilmiş Vikipedi konuları: (Türkçe başlık, İngilizce başlık).
 
+Türkçe karşılığı bulunamayan konularda ilk değer None'dır (sadece İngilizce çekilir).
 Başlıklar Vikipedi'deki sayfa adlarıdır. Yönlendirmeler (redirect) otomatik
 takip edilir. Bulunamayan başlıklar indirme sırasında raporlanır.
 """
 
-CURATED: list[tuple[str, str]] = [
+CURATED: list[tuple[str | None, str]] = [
     # Metabolik ve endokrin
     ("Diyabet", "Diabetes"),
     ("Gestasyonel diyabet", "Gestational diabetes"),
     ("Hipoglisemi", "Hypoglycemia"),
     ("Obezite", "Obesity"),
-    ("Hiperlipidemi", "Hypercholesterolemia"),
+    (None, "Hypercholesterolemia"),
     ("Hipotiroidizm", "Hypothyroidism"),
     ("Hipertiroidi", "Hyperthyroidism"),
     ("Guatr", "Goitre"),
@@ -125,7 +126,7 @@ CURATED: list[tuple[str, str]] = [
     ("Kemik kırığı", "Bone fracture"),
     ("Raşitizm", "Rickets"),
     # Sindirim ve karaciğer
-    ("Gastroözofajiyal reflü hastalığı", "Gastroesophageal reflux disease"),
+    (None, "Gastroesophageal reflux disease"),
     ("Peptik ülser", "Peptic ulcer disease"),
     ("Gastrit", "Gastritis"),
     ("Çölyak hastalığı", "Coeliac disease"),
@@ -143,7 +144,7 @@ CURATED: list[tuple[str, str]] = [
     # Böbrek ve üreme
     ("Böbrek taşı", "Kidney stone disease"),
     ("Kronik böbrek hastalığı", "Chronic kidney disease"),
-    ("Prostat hiperplazisi", "Benign prostatic hyperplasia"),
+    (None, "Benign prostatic hyperplasia"),
     ("Endometriozis", "Endometriosis"),
     ("Menopoz", "Menopause"),
     ("Gebelik", "Pregnancy"),
@@ -179,7 +180,7 @@ CURATED: list[tuple[str, str]] = [
     ("Yorgunluk", "Fatigue"),
     ("Ödem", "Edema"),
     ("Kaşıntı", "Itch"),
-    ("Deri döküntüsü", "Rash"),
+    (None, "Rash"),
     # Acil durum ve ilk yardım
     ("İlk yardım", "First aid"),
     ("Kardiyopulmoner resüsitasyon", "Cardiopulmonary resuscitation"),
@@ -198,4 +199,4 @@ CURATED: list[tuple[str, str]] = [
 
 def curated_titles(lang: str) -> list[str]:
     index = {"tr": 0, "en": 1}[lang]
-    return [pair[index] for pair in CURATED]
+    return [pair[index] for pair in CURATED if pair[index]]

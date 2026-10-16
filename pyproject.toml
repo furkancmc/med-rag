@@ -10,7 +10,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
-embed = ["sentence-transformers>=3"]
 
 [build-system]
 requires = ["setuptools>=68"]
