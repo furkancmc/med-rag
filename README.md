@@ -62,6 +62,8 @@ python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gere
 | `İndeks oluştur (API)` | Qwen3 ile embedding hesaplar, `data/index_qwen3` altına commit'ler |
 | `Arama değerlendirmesi` | Evren API ile test soruları üretir, bm25 / vector / hybrid'i karşılaştırır (`eval/results.md`) |
 | `Güvenlik ve uçtan uca test` | `/chat` akışını dener, güvenlik ve kaynağa sadakat senaryolarını çalıştırır (`eval/safety_results.md`) |
+| `Ekran görüntüsü` | Gerçek uygulamayı gerçek API ile açar, telefon boyutunda ekran görüntüleri alır (`docs/screens/`) |
+| `API denemesi` | Embedding ve sohbet API'sine birkaç istek atıp süre ve hata bilgisini yazdırır |
 
 `EVREN_API_KEY` GitHub'da repo ayarlarındaki Actions secret'ı olarak tanımlıdır.
 
