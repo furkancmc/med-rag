@@ -16,11 +16,11 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 - [x] Bağlantı testi başarılı (1.8 sn, model deepseek/deepseek-v4.1-flash, düşünme tokenları 'reasoning' alanında, kalan kredi ~1062)
 - [x] A Arama: ana dala commit edildi (b143fd5); rerank varsayılan kapalı; ölçüm ertelendi (8b yasağı)
   (A ana ağaç yedeği: checkpoints/ana-agac-A.patch)
-- [ ] B Veri
+- [x] B Veri: birleştirildi (684d7ce); veri scratchpad'da, repoya girmedi; embedding indeks kurulumu ERTELENDİ
 - [x] C Güvenlik: birleştirildi (62277d0), 40 senaryo 40/40 (BM25)
 - [x] D Belirti: birleştirildi (81ec7a1)
 - [x] E Tahlil: birleştirildi (650560e)
-- [~] F Sunucu: ajan başlatıldı
+- [x] F Sunucu: birleştirildi (86643d3); hız sınırı, erişim kodu, feedback, meta, speech, Docker; platform workflow Actions'ta doğrulanacak
 - [~] G Arayüz: ajan başlatıldı (a47ffd...), önceki CSS yaması ile başlıyor
 
 ## Notlar
@@ -39,3 +39,11 @@ Oturum kesilirse buradan devam edilir. Her adım bitince bu dosya güncellenir.
 ## Git durumu
 - Ana dal: A, D, E, C birleştirildi; 354 test geçti, ruff temiz. B ve G sürüyor, F başlıyor.
 - Birleştirme sonrası her turda: pytest + ruff + git status + commit.
+
+## Bekleyenler / geri dönülecekler
+- G Arayüz ajanı sürüyor (birleştirilecek).
+- ERTELENEN (8b embedding/rerank masrafı): yeni ~19.500 parça için indeks kurulumu (`index embed`, artımlı; ilk geçişte `--trust-legacy`), arama ve rerank ölçümü (A), retrieval-check, kaynaklı uçtan uca testler (D/E), vektör aramayla güvenlik koşusu (C).
+- Rerank maliyeti: soru başına ~40 doküman x ~450 token; açarken pool 10-15 ve metin ~600 karakter öner.
+- Tıbbi inceleme: labs referans aralıkları ve D'nin 'çocukta hafif ateş' beklenen aralığı (home..today) kullanıcı onayı bekliyor.
+- Anahtar yoksa deps.get_retriever RuntimeError ile 500 veriyor; düzgün hata mesajı eklenebilir.
+- Test: 407 geçti, 1 atlandı, ruff temiz (F birleşiminden sonra).
