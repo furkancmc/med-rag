@@ -1,29 +1,81 @@
 # medrag
 
-Açık tıbbi dokümanlar üzerinde çalışan, Türkçe sohbet eden bir RAG asistanı.
-Cevapları Claude üretir, kaynakları gösterir. Teşhis koymaz, doktorun yerini tutmaz.
+Açık tıbbi kaynaklar üzerinde çalışan, Türkçe sohbet eden bir RAG asistanı.
+Soruya önce ilgili kaynak parçalarını bulur, sonra cevabı yalnızca bu kaynaklara dayanarak
+yazar ve [1] [2] gibi atıflarla kaynakları gösterir.
 
-## Durum
+**Teşhis koymaz, ilaç ya da doz önermez, doktorun yerini tutmaz.** Acil belirtilerde (göğüs ağrısı,
+felç belirtisi, nefes alamama, kendine zarar vb.) cevaptan önce 112'ye yönlendirir. Her cevabın sonuna
+tıbbi uyarı eklenir.
 
-Yol haritası `PLAN.md` dosyasında. Şu an aşama 1 (iskelet) tamam.
+## Nasıl çalışır
 
-## Kurulum
+```
+soru ──► acil durum kontrolü ──► hybrid arama ──► prompt ──► Evren LLM ──► akan cevap + kaynaklar
+          (kural tabanlı)         BM25 + Qwen3      kaynak     (SSE)
+                                  vektör, RRF       atıfı
+```
+
+- **Veri:** MedlinePlus (İngilizce, kamu malı, 1.017 konu) ve elle seçilmiş Vikipedi makaleleri
+  (Türkçe ve İngilizce, CC BY-SA). Kaynak ve lisans her parçada saklanır. Kendi `.txt`/`.md`
+  dosyalarını `data/local/` altına koyabilirsin.
+- **Arama:** BM25 (Türkçe için aksansız, ilk 5 harfe kökleme) ve `qwen3-embedding-8b` vektörleri,
+  sıralamalar RRF ile birleştirilir. Türkçe soru İngilizce kaynağı da bulabilir.
+- **Cevap:** Evren API'deki sohbet modeli (`model: auto`).
+
+## Kurulum ve çalıştırma
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # ANTHROPIC_API_KEY'i doldur
-pytest
+export EVREN_API_KEY=...            # anahtarı asla repoya yazma
+python -m medrag.api                # http://localhost:8000
+```
+
+Telefonda açmak için aynı ağdaki bilgisayarın adresini kullan (`http://<bilgisayar-ip>:8000`).
+Docker ile:
+
+```bash
+docker build -t medrag .
+docker run -e EVREN_API_KEY=... -p 8000:8000 medrag
+```
+
+Sunucunun `evren-llmapi.ssyz.org.tr` adresine erişebilmesi gerekir.
+
+## Veriyi yenileme
+
+Her adım bir komuttur; GitHub Actions'ta da hazır workflow'ları var (Actions sekmesinden elle çalışır).
+
+```bash
+python -m medrag.ingest medlineplus          # MedlinePlus -> data/raw/medlineplus/topics.jsonl
+python -m medrag.ingest wikipedia --lang tr --curated   # seçili konular (src/medrag/ingest/curated.py)
+python -m medrag.ingest build                # -> data/chunks.jsonl
+python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gerekir
+```
+
+| Workflow | Ne yapar |
+|---|---|
+| `Veri çek` | MedlinePlus ve Vikipedi'yi indirip `data/raw` altına commit'ler |
+| `İndeks oluştur (API)` | Qwen3 ile embedding hesaplar, `data/index_qwen3` altına commit'ler |
+| `Arama değerlendirmesi` | Evren API ile test soruları üretir, bm25 / vector / hybrid'i karşılaştırır (`eval/results.md`) |
+| `Güvenlik ve uçtan uca test` | `/chat` akışını dener, güvenlik ve kaynağa sadakat senaryolarını çalıştırır (`eval/safety_results.md`) |
+
+`EVREN_API_KEY` GitHub'da repo ayarlarındaki Actions secret'ı olarak tanımlıdır.
+
+## Geliştirme
+
+```bash
+pytest          # API'ye dokunmayan testler; LLM ve embedding sahte (mock) servislerle test edilir
 ruff check .
 ```
 
-## Veri hattı
+Dizin yapısı: `src/medrag/ingest` (veri hattı), `index` (BM25, embedding, vektör deposu),
+`retrieve.py` (hybrid arama), `chat` (acil durum, prompt, servis), `api` (FastAPI), `web` (sohbet sayfası),
+`eval` (arama ve güvenlik değerlendirmesi).
 
-```bash
-python -m medrag.ingest medlineplus              # MedlinePlus XML -> data/raw/medlineplus
-python -m medrag.ingest wikipedia --lang tr      # Vikipedi -> data/raw/wikipedia/tr.jsonl
-python -m medrag.ingest build                    # -> data/chunks.jsonl
-```
+## Sınırlar
 
-Kendi `.txt`/`.md` dosyalarını `data/local/` altına koyarsan onlar da işlenir.
-İndirme için `medlineplus.gov` ve `*.wikipedia.org` adreslerine ağ erişimi gerekir.
+- Bilgi tabanı küçük (yaklaşık 1.200 makale/konu). Kapsam dışı bir konuda "yeterli bilgi yok" demesi beklenir.
+- Acil durum kontrolü anahtar kelime kurallarına dayanır; her cümleyi yakalamaz.
+- Kullanıcı başına hız sınırı yok. Herkese açık bir sunucuya koymadan önce eklenmeli.
+- Kaynak dosyaları CC BY-SA içerir; yayınlarken atıf ve lisans korunmalıdır.
