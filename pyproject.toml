@@ -28,4 +28,4 @@ line-length = 100
 src = ["src", "tests"]
 
 [tool.setuptools.package-data]
-medrag = ["web/*.html"]
+medrag = ["web/*.html", "web/static/*", "web/static/**/*"]
