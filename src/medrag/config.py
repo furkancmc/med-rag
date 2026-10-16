@@ -3,6 +3,10 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class ConfigError(RuntimeError):
+    """Eksik ya da hatalı yapılandırma (örn. EVREN_API_KEY yok). API bunu 503 olarak döner."""
+
+
 class Settings(BaseSettings):
     """Tüm ayarlar `MEDRAG_` önekli ortam değişkenleriyle değiştirilebilir.
 

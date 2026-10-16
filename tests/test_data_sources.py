@@ -229,3 +229,20 @@ def test_curated_list_is_large_and_clean():
         titles = curated_titles(lang)
         assert len({t.casefold() for t in titles}) == len(titles)
     assert "Kırım-Kongo kanamalı ateşi" in curated_titles("tr")
+
+
+def test_optional_source_failure_does_not_fail_fetch(tmp_path, monkeypatch):
+    from medrag.ingest import __main__ as ingest_cli
+    from medrag.ingest.report import SourceReport
+
+    def fake_runner(name, raw, limit, per_topic):
+        def run():
+            r = SourceReport(name, requested=3)
+            r.fatal = "403"
+            return r
+
+        return run
+
+    monkeypatch.setattr(ingest_cli, "_runner", fake_runner)
+    assert ingest_cli.fetch(["nihods"], tmp_path, None, 1) == 0
+    assert ingest_cli.fetch(["openfda"], tmp_path, None, 1) == 1

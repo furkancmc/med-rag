@@ -184,3 +184,15 @@ def test_wbc_display_range_in_input_unit():
     r = interpret_value("WBC", "7500", "/mm3")
     assert r.status == "normal"
     assert r.range["low"] == 4500 and r.range["high"] == 11000 and r.range["unit"] == "/mm3"
+
+
+def test_report_range_takes_priority_and_builtin_range_recommends_doctor():
+    from medrag.labs.interpret import BUILTIN_RANGE_NOTE, interpret_value
+
+    own = interpret_value("Hemoglobin", 12.0, "g/dL", ref_low=12.5, ref_high=16.0, sex="female")
+    assert own.range["basis"] == "report" and own.status == "low"
+    assert BUILTIN_RANGE_NOTE not in own.note
+
+    builtin = interpret_value("Hemoglobin", 12.0, "g/dL", sex="female")
+    assert builtin.range["basis"] == "builtin"
+    assert "hekiminize danışın" in builtin.note

@@ -25,6 +25,8 @@ from .openfda import download_openfda
 from .report import SourceReport
 
 SOURCES = ("medlineplus", "wikipedia-tr", "wikipedia-en", "europepmc", "openfda", "nihods")
+# Başarısızlığı çıkış kodunu bozmayan kaynaklar (örn. NIH ODS bot koruması 403 veriyor; uyarı olarak raporlanır).
+OPTIONAL_SOURCES = frozenset({"nihods"})
 
 
 def _runner(
@@ -73,11 +75,15 @@ def fetch(sources: list[str], raw: Path, limit: int | None, per_topic: int) -> i
         futures = {s: pool.submit(_safe, s, r) for s, r in runners.items()}
         reports = [futures[s].result() for s in runners]
     print("\n=== ÖZET ===")
+    failed = 0
     for r in reports:
-        status = "TAMAM" if r.ok else "HATA "
+        optional = r.source in OPTIONAL_SOURCES
+        status = "TAMAM" if r.ok else ("ATLA " if optional else "HATA ")
         print(f"{status} {r.source}: alınan {r.fetched}/{r.requested}, belge {r.documents}"
-              + (f"  [{r.fatal}]" if r.fatal else ""))
-    return sum(1 for r in reports if not r.ok)
+              + (f"  [{r.fatal}]" if r.fatal else "")
+              + ("  (isteğe bağlı kaynak, çıkış kodunu etkilemez)" if optional and not r.ok else ""))
+        failed += 0 if r.ok or optional else 1
+    return failed
 
 
 def main() -> None:

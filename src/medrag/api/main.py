@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -15,6 +15,7 @@ from medrag import deps
 from medrag.api import middleware
 from medrag.api import routes as routes_pkg
 from medrag.chat.service import ChatService
+from medrag.config import ConfigError
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 STATIC_DIR = WEB_DIR / "static"
@@ -52,6 +53,13 @@ def create_app(service: ChatService | None = None) -> FastAPI:
     if service is not None:
         app.dependency_overrides[deps.get_chat_service] = lambda: service
     middleware.install(app)
+
+    @app.exception_handler(ConfigError)
+    async def config_error(_request, exc: ConfigError) -> JSONResponse:
+        # Yapılandırma eksikse (örn. API anahtarı) çökmek yerine anlaşılır 503 dön; ayrıntıyı loga yazma.
+        return JSONResponse(
+            {"error": "config_error", "message": f"Sunucu yapılandırması eksik: {exc}"}, status_code=503
+        )
 
     def chat_service() -> ChatService:
         # İlk istekte yüklenir; indeks ya da anahtar yoksa hata akış içinde temiz mesaja dönüşür.

@@ -202,3 +202,13 @@ def test_page_served():
     c = client(svc(GOOD % "home"))
     r = c.get("/assess")
     assert r.status_code == 200 and "app-nav" in r.text
+
+
+def test_child_under_five_with_fever_is_never_home_only():
+    from medrag.assess.models import Profile
+    from medrag.assess.rules import evaluate
+
+    res = evaluate("4 yaşında, iki gündür 38.2 ateş, oyun oynuyor, su içiyor.", Profile(age=4))
+    assert res.level in ("soon", "today", "emergency")
+    adult = evaluate("30 yaşında, bir gündür hafif ateş, genel durum iyi.", Profile(age=30))
+    assert adult.level == "home"

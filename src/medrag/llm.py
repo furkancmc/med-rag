@@ -8,9 +8,15 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from .config import ConfigError
+
 
 class LLMError(RuntimeError):
     pass
+
+
+class MissingKeyError(LLMError, ConfigError):
+    """EVREN_API_KEY tanımlı değil; hem LLM hem yapılandırma hatası sayılır."""
 
 
 THINK_CLOSED = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
@@ -225,7 +231,7 @@ class EvrenLLM:
 
     def _request(self, payload: dict) -> urllib.request.Request:
         if not self.api_key:
-            raise LLMError("EVREN_API_KEY tanımlı değil")
+            raise MissingKeyError("EVREN_API_KEY tanımlı değil")
         return urllib.request.Request(
             self.url,
             data=json.dumps(payload).encode(),

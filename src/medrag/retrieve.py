@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .config import Settings
+from .config import ConfigError, Settings
 from .index.bm25 import BM25
 from .index.embed import ApiEmbedder, Embedder
 from .index.store import load_chunks, load_vectors
@@ -260,7 +260,7 @@ def make_expander(settings: Settings, api_key: str) -> QueryExpander:
 def load_retriever(settings: Settings) -> Retriever:
     api_key = os.environ.get("EVREN_API_KEY")
     if not api_key:
-        raise RuntimeError("EVREN_API_KEY ortam değişkeni tanımlı değil")
+        raise ConfigError("EVREN_API_KEY ortam değişkeni tanımlı değil")
     if not (settings.data_dir / "chunks.jsonl").exists():
         build_chunks(settings.data_dir)  # data/raw'dan deterministik olarak üretilir
     chunks = load_chunks(settings.data_dir)

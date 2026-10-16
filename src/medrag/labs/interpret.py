@@ -237,6 +237,17 @@ def _classify(v: float, qual: str, low: float | None, high: float | None) -> tup
     return "unknown", "Değer bir eşiğin üstünde bildirilmiş; kesin sınıflandırılamadı."
 
 
+# Raporda referans aralığı yazıyorsa o esas alınır; yoksa genel aralık kullanılır ve hekime yönlendirilir.
+BUILTIN_RANGE_NOTE = (
+    "Raporunuzda referans aralığı girilmediği için genel yetişkin aralığı kullanıldı; aralıklar "
+    "laboratuvara göre değişir. Kesin değerlendirme için raporunuzdaki aralığa bakın ve hekiminize danışın."
+)
+CRITICAL_NOTE = (
+    "Kritik eşik genel bir klinik eşiktir (laboratuvarınızın uyarı değerleri farklı olabilir); "
+    "bu değeri bir hekimle değerlendirin."
+)
+
+
 def interpret_value(
     test_name: str,
     value: str | float,
@@ -282,7 +293,8 @@ def interpret_value(
     notes: list[str] = []
     if user_low is not None or user_high is not None:
         status, extra = _classify(v, qual, user_low, user_high)  # rapor aralığı, girilen birimde
-        res.range = {"low": user_low, "high": user_high, "unit": shown_unit, "source": "Raporunuzdaki aralık"}
+        res.range = {"low": user_low, "high": user_high, "unit": shown_unit, "source": "Raporunuzdaki aralık",
+                     "basis": "report"}
     else:
         (rl, rh), sex_note = pick_reference(test, sex)
         status, extra = _classify(canon, qual, rl, rh)
@@ -291,7 +303,9 @@ def interpret_value(
             "high": _round(None if rh is None else _from_canonical(test, rh, unit_s or None)),
             "unit": shown_unit,
             "source": test.ref_source,
+            "basis": "builtin",
         }
+        notes.append(BUILTIN_RANGE_NOTE)
         if sex_note:
             notes.append(sex_note)
         if age is not None and age < 18:
@@ -310,6 +324,7 @@ def interpret_value(
     if status == "critical":
         notes.insert(0, "Kritik düzeyde " + ("düşük" if res.direction == "low" else "yüksek")
                      + " değer: en kısa sürede bir sağlık kuruluşuyla görüşün.")
+        notes.append(CRITICAL_NOTE)
     elif status in ("low", "high"):
         notes.insert(0, f"Referans aralığının {'altında' if status == 'low' else 'üzerinde'}.")
     res.note = " ".join(notes)

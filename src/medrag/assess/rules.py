@@ -141,6 +141,8 @@ def evaluate_context(ctx: Context) -> RuleResult:
             res.add("Bebekte ateş", "today")
     if age is not None and age < 5 and fever and has(HIGH_FEVER):
         res.add("Küçük çocukta yüksek ateş", "today")
+    elif age is not None and age < 5 and fever:
+        res.add("5 yaş altında ateş: hekime danışın", "soon")  # güvenli taraf: evde izlemeye bırakma
     if has(SELF_HARM):
         res.add("Kendine zarar verme düşüncesi", "emergency")
     if ctx.pregnant:
