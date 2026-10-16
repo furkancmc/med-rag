@@ -1,0 +1,18 @@
+# Claude Code'u Evren API ile kullanmak için LiteLLM proxy ayarı.
+#   pip install "litellm[proxy]"
+#   export EVREN_API_KEY=...
+#   litellm --config scripts/local/litellm.yaml --port 4000
+# Sonra:
+#   export ANTHROPIC_BASE_URL=http://localhost:4000
+#   export ANTHROPIC_AUTH_TOKEN=herhangi-bir-deger
+#   export ANTHROPIC_MODEL=evren
+#   claude
+model_list:
+  - model_name: evren
+    litellm_params:
+      model: openai/auto            # istersen sabit bir model adı yaz
+      api_base: https://evren-llmapi.ssyz.org.tr/v1
+      api_key: os.environ/EVREN_API_KEY
+litellm_settings:
+  num_retries: 3                    # Evren 'auto' bazen boş içerik döndürüyor
+  drop_params: true

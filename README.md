@@ -349,3 +349,7 @@ teşhis ya da tedavi yerine geçmez. Sağlık sorunlarınız için bir sağlık 
 - Gerçek API ile ekran görüntüleri (`docs/screens/`), güvenlik senaryoları 13/13.
 - Vektör arama varsayılan oldu (ölçüm: recall@5 0,85); hybrid ve BM25 isteğe bağlı.
 - Qwen3 embedding indeksi (13.236 parça), seçili Vikipedi listesi, MedlinePlus.
+
+### Yerel PC'de çalıştırma
+
+`bash scripts/local/kur.sh` (Windows: `.\scripts\local\kur.ps1`) sanal ortamı kurar ve `.env` oluşturur. Anahtar dosyaya yazılmaz, `EVREN_API_KEY` ortam değişkeni olarak verilir. Claude Code'u Evren API ile kullanmak için `scripts/local/litellm.yaml` içindeki adımlara bak.
