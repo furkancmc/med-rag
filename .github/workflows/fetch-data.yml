@@ -21,15 +21,9 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .
       - run: python -m medrag.ingest medlineplus
-      - name: Türkçe Vikipedi kategori adlarını ara (log için)
-        run: |
-          for q in hastalık hastalıklar tıp belirti; do
-            echo "== $q"; python -m medrag.ingest categories --lang tr "$q"
-          done
-        continue-on-error: true
       - run: python -m medrag.ingest wikipedia --lang tr --limit 500
         continue-on-error: true
-      - run: python -m medrag.ingest wikipedia --lang en --limit 500
+      - run: test -f data/raw/wikipedia/en.jsonl || python -m medrag.ingest wikipedia --lang en --limit 500
         continue-on-error: true
       - run: python -m medrag.ingest build
         if: ${{ !cancelled() }}

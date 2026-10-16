@@ -13,9 +13,9 @@ WIKI_DELAY = 1.0  # Vikipedi istekleri arasında saniye
 MEDLINE_INDEX = "https://medlineplus.gov/xml.html"
 MEDLINE_TOPICS = re.compile(r'href="([^"]*mplus_topics_\d{4}-\d{2}-\d{2}\.xml)"')
 
-# Varsayılan Vikipedi kategorileri (ağ açılınca doğrulanacak, CLI'dan değiştirilebilir)
+# Varsayılan Vikipedi kategorileri (adlar GitHub Actions'ta arama ile doğrulandı)
 DEFAULT_CATEGORIES = {
-    "tr": ["Kategori:Hastalıklar"],
+    "tr": ["Kategori:Hastalıklar ve bozukluklar", "Kategori:Semptom ve belirtiler"],
     "en": ["Category:Diseases and disorders"],
 }
 
