@@ -164,3 +164,7 @@ kaynağın kullanım sınırlarına saygılı eşzamanlılık ve 429'da geri çe
   → `Güvenlik ve uçtan uca test` → yeni sayfaların değerlendirmeleri (assess, labs, platform) → `Ekran görüntüsü`
   → README ve değişiklik günlüğü güncellemesi.
 - Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir.
+
+## Yerelde devam (görev tarifleri)
+
+Her workstream'in ayrıntılı görev tarifi `docs/gorevler/{A..G}.md` içinde. Yarım kalan işlerin yamaları `checkpoints/*.patch` dosyalarında (uygulamak için `git apply checkpoints/<dosya>.patch`). Yerelde bir ajana şunu ver: "PLAN.md ve docs/gorevler/<harf>.md dosyasını oku, o görevi yap."
