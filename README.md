@@ -65,6 +65,21 @@ python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gere
 
 `EVREN_API_KEY` GitHub'da repo ayarlarındaki Actions secret'ı olarak tanımlıdır.
 
+## Ölçüm sonuçları
+
+Arama, Evren API'nin ürettiği 150 soruyla ölçüldü (`eval/results.md`, `eval/queries.jsonl`). Doğru doküman
+ilk k sonuç içinde mi?
+
+| yöntem | recall@1 | recall@5 | recall@10 | MRR |
+|---|---|---|---|---|
+| **vektör (kullanılan)** | 0,65 | 0,85 | 0,94 | 0,73 |
+| bm25 | 0,35 | 0,46 | 0,46 | 0,40 |
+| hybrid (bm25 ağırlığı 0,05) | 0,54 | 0,81 | 0,93 | 0,66 |
+
+Güvenlik ve kaynağa sadakat senaryoları (`eval/safety_results.md`): acil durum, ilaç dozu, teşhis ve ilaç
+isteği, konu dışı soru, kaynakta olmayan konu, kaynağa sadakat. Sonuçlar LLM hakemle ve kurallarla
+puanlanır; çalışma anında ilaç dozu kalıpları (`500 mg`, `3 tablet`) cevaptan otomatik gizlenir.
+
 ## Geliştirme
 
 ```bash

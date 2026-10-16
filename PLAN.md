@@ -12,7 +12,7 @@ Cevaplar Claude API ile üretilir, kaynak gösterilir.
 ## Aşamalar
 - [x] 1. İskelet: pyproject, ayarlar, CI, README
 - [x] 2. Veri hattı: indirme, parse, chunk (kod hazır; gerçek veri ağ erişimi gelince indirilecek)
-- [ ] 3. İndeks: qwen3-embedding-8b (API) embedding, BM25 (SQLite yerine düz dosya)
+- [x] 3. İndeks: qwen3-embedding-8b (API) embedding, BM25 (SQLite yerine düz dosya)
 - [x] 4. Arama: hybrid (BM25 + embedding), RRF, recall@k ölçümü
 - [x] 5. Sohbet servisi: prompt, acil durum kontrolü, Claude çağrısı, [1] [2] atıfları
 - [x] 6. FastAPI (SSE streaming) ve mobil uyumlu web sayfası
