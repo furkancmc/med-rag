@@ -43,6 +43,21 @@ class Settings(BaseSettings):
     # --- Sohbet ve güvenlik (iş akışı C) ---
     llm_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
     llm_model: str = "auto"
+    llm_extra_params: str = ""  # JSON; cevap modeline her isteğe eklenir (örn. düşünmeyi kapatma)
+    answer_max_tokens: int = 4096  # düşünen modeller token harcar; cömert tutulur
+    # Çalışma anında cevap doğrulama
+    verify_enabled: bool = True
+    verify_model: str = "deepseek-v4.1-flash"
+    verify_extra_params: str = '{"chat_template_kwargs": {"enable_thinking": false}}'
+    verify_budget_seconds: float = 20.0
+    verify_group_size: int = 3
+    verify_concurrency: int = 8
+    # İkinci katman acil durum / zararlı istek sınıflandırıcısı
+    classifier_enabled: bool = True
+    guard_model: str = ""  # örn. qwen3-guard-4b; boşsa koruma modeli kullanılmaz (maliyet için kapalı)
+    classifier_model: str = "deepseek-v4.1-flash"  # boş bırakılırsa LLM sınıflandırıcı kullanılmaz
+    classifier_extra_params: str = '{"chat_template_kwargs": {"enable_thinking": false}}'
+    classifier_timeout_seconds: float = 8.0
 
     # --- Belirti değerlendirme (iş akışı D) ---
     assess_model: str = "auto"  # değerlendirmeden sonra örn. "deepseek-v4.1-flash" yapılabilir
