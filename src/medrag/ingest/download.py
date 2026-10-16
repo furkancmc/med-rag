@@ -4,6 +4,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
 
@@ -52,20 +53,47 @@ def find_medlineplus_urls(index_html: str) -> list[str]:
     return urls
 
 
-def download_medlineplus(raw_dir: Path, get: Callable[[str], bytes] = http_get) -> list[Path]:
-    """xml.html sayfasındaki güncel 'health topics' XML dosyalarını indirir."""
+def medlineplus_topics_from_xml(xml_bytes: bytes, languages: tuple[str, ...]) -> list[dict]:
+    """XML'den sadece istenen dillerdeki konuları sade bir sözlük listesine çevirir."""
+    root = ET.fromstring(xml_bytes)
+    rows = []
+    for topic in root.iter("health-topic"):
+        if topic.get("language") not in languages:
+            continue
+        rows.append(
+            {
+                "id": topic.get("id"),
+                "language": topic.get("language"),
+                "title": topic.get("title", ""),
+                "url": topic.get("url", ""),
+                "summary_html": topic.findtext("full-summary") or "",
+            }
+        )
+    return rows
+
+
+def download_medlineplus(
+    raw_dir: Path,
+    get: Callable[[str], bytes] = http_get,
+    languages: tuple[str, ...] = ("English",),
+) -> Path:
+    """Sayfadaki en güncel 'health topics' XML dosyasını indirip topics.jsonl yazar."""
     index = get(MEDLINE_INDEX).decode("utf-8", errors="replace")
     urls = find_medlineplus_urls(index)
     if not urls:
         raise RuntimeError("MedlinePlus sayfasında topics XML bağlantısı bulunamadı")
+    latest = max(urls)  # dosya adlarındaki tarih ISO biçiminde, sıralama doğru çalışır
+    rows = medlineplus_topics_from_xml(get(latest), languages)
+    if not rows:
+        raise RuntimeError(f"{latest} içinde {languages} dilinde konu bulunamadı")
     out_dir = raw_dir / "medlineplus"
     out_dir.mkdir(parents=True, exist_ok=True)
-    paths = []
-    for url in urls:
-        path = out_dir / url.rsplit("/", 1)[-1]
-        path.write_bytes(get(url))
-        paths.append(path)
-    return paths
+    path = out_dir / "topics.jsonl"
+    with path.open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"{latest}: {len(rows)} konu yazıldı")
+    return path
 
 
 def wiki_api(lang: str, params: dict) -> str:
@@ -113,20 +141,32 @@ def category_titles(
 def fetch_extracts(
     lang: str, titles: list[str], get: Callable[[str], bytes] = wiki_get
 ) -> list[dict]:
-    """Başlıkların düz metin içeriğini 20'şerli gruplar halinde çeker."""
+    """Tam metin (intro dışı) için Vikipedi sayfa başına tek istek kabul ediyor."""
     pages = []
-    for i in range(0, len(titles), 20):
+    for title in titles:
         params = {
             "action": "query",
             "prop": "extracts",
             "explaintext": "1",
-            "exlimit": "max",
             "redirects": "1",
-            "titles": "|".join(titles[i : i + 20]),
+            "titles": title,
         }
         data = json.loads(get(wiki_api(lang, params)))
         pages.extend(data.get("query", {}).get("pages", []))
     return pages
+
+
+def search_categories(lang: str, query: str, get: Callable[[str], bytes] = wiki_get) -> list[str]:
+    """Doğru kategori adını bulmak için kategori sayfalarında arama yapar."""
+    params = {
+        "action": "query",
+        "list": "search",
+        "srsearch": query,
+        "srnamespace": "14",
+        "srlimit": "30",
+    }
+    data = json.loads(get(wiki_api(lang, params)))
+    return [r["title"] for r in data.get("query", {}).get("search", [])]
 
 
 def download_wikipedia(

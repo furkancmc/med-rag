@@ -3,13 +3,16 @@ from pathlib import Path
 
 from .chunk import chunk_document
 from .models import Document
-from .parse import parse_local_file, parse_medlineplus, parse_wikipedia_extract
+from .parse import parse_local_file, parse_medlineplus_topic, parse_wikipedia_extract
 
 
 def load_documents(raw_dir: Path, local_dir: Path) -> list[Document]:
     docs: list[Document] = []
-    for xml_path in sorted((raw_dir / "medlineplus").glob("*.xml")):
-        docs += parse_medlineplus(xml_path.read_text(encoding="utf-8"))
+    for jsonl in sorted((raw_dir / "medlineplus").glob("*.jsonl")):
+        for line in jsonl.read_text(encoding="utf-8").splitlines():
+            doc = parse_medlineplus_topic(json.loads(line))
+            if doc:
+                docs.append(doc)
     for jsonl in sorted((raw_dir / "wikipedia").glob("*.jsonl")):
         lang = jsonl.stem
         for line in jsonl.read_text(encoding="utf-8").splitlines():
@@ -28,7 +31,9 @@ def build_chunks(data_dir: Path) -> int:
     """Ham dosyaları okuyup data/chunks.jsonl dosyasını yazar. Chunk sayısını döner."""
     docs = load_documents(data_dir / "raw", data_dir / "local")
     if not docs:
-        raise RuntimeError("Hiç doküman bulunamadı. Önce 'download' çalıştır veya data/local'e dosya koy.")
+        raise RuntimeError(
+            "Hiç doküman bulunamadı. Önce 'download' çalıştır veya data/local'e dosya koy."
+        )
     count = 0
     with (data_dir / "chunks.jsonl").open("w", encoding="utf-8") as f:
         for doc in docs:

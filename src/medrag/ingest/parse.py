@@ -1,5 +1,4 @@
 import re
-import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -37,31 +36,21 @@ def html_to_text(html: str) -> str:
     return "\n".join(line.strip() for line in text.splitlines()).strip()
 
 
-def parse_medlineplus(xml_text: str) -> list[Document]:
-    """MedlinePlus 'health topics' XML dosyasını okur.
-
-    Özet alanı (full-summary) XML içinde kaçışlı HTML olarak gelir.
-    """
-    root = ET.fromstring(xml_text)
-    docs = []
-    for topic in root.iter("health-topic"):
-        summary = topic.findtext("full-summary") or ""
-        text = html_to_text(summary)
-        if not text:
-            continue
-        lang = LANG_CODES.get(topic.get("language", ""), "en")
-        docs.append(
-            Document(
-                id=f"medlineplus-{lang}-{topic.get('id')}",
-                title=topic.get("title", ""),
-                text=text,
-                source="medlineplus",
-                url=topic.get("url", ""),
-                lang=lang,
-                license="Public domain (NLM MedlinePlus)",
-            )
-        )
-    return docs
+def parse_medlineplus_topic(row: dict) -> Document | None:
+    """topics.jsonl satırını Document'a çevirir. Özet kaçışlı HTML olarak gelir."""
+    text = html_to_text(row.get("summary_html") or "")
+    if not text:
+        return None
+    lang = LANG_CODES.get(row.get("language", ""), "en")
+    return Document(
+        id=f"medlineplus-{lang}-{row['id']}",
+        title=row.get("title", ""),
+        text=text,
+        source="medlineplus",
+        url=row.get("url", ""),
+        lang=lang,
+        license="Public domain (NLM MedlinePlus)",
+    )
 
 
 def parse_wikipedia_extract(page: dict, lang: str) -> Document | None:

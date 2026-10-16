@@ -1,33 +1,29 @@
 from medrag.ingest.parse import (
     html_to_text,
     parse_local_file,
-    parse_medlineplus,
+    parse_medlineplus_topic,
     parse_wikipedia_extract,
 )
 
-# Gerçek MedlinePlus dosyasının biçimini gösteren küçük kesit (sadece parse testi için)
-MEDLINE_XML = """<?xml version="1.0"?>
-<health-topics total="2">
-  <health-topic id="7" language="English" title="Asthma" url="https://medlineplus.gov/asthma.html">
-    <full-summary>&lt;p&gt;Asthma is a disease.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Cough&lt;/li&gt;&lt;li&gt;Wheeze&lt;/li&gt;&lt;/ul&gt;</full-summary>
-  </health-topic>
-  <health-topic id="8" language="Spanish" title="Asma" url="https://medlineplus.gov/spanish/asthma.html">
-    <full-summary></full-summary>
-  </health-topic>
-</health-topics>"""
-
 
 def test_html_to_text_keeps_lists():
-    assert html_to_text("<p>Merhaba</p><ul><li>bir</li><li>iki</li></ul>") == "Merhaba\n\n- bir\n- iki"
+    assert (
+        html_to_text("<p>Merhaba</p><ul><li>bir</li><li>iki</li></ul>") == "Merhaba\n\n- bir\n- iki"
+    )
 
 
-def test_medlineplus_parse_skips_empty_summary():
-    docs = parse_medlineplus(MEDLINE_XML)
-    assert len(docs) == 1
-    d = docs[0]
+def test_medlineplus_topic():
+    row = {
+        "id": "7",
+        "language": "English",
+        "title": "Asthma",
+        "url": "https://medlineplus.gov/asthma.html",
+        "summary_html": "<p>Asthma is a disease.</p><ul><li>Cough</li><li>Wheeze</li></ul>",
+    }
+    d = parse_medlineplus_topic(row)
     assert d.id == "medlineplus-en-7" and d.lang == "en"
     assert "Asthma is a disease." in d.text and "- Wheeze" in d.text
-    assert d.url == "https://medlineplus.gov/asthma.html"
+    assert parse_medlineplus_topic({**row, "summary_html": ""}) is None
 
 
 def test_wikipedia_page():

@@ -3,7 +3,12 @@ import argparse
 from medrag.config import get_settings
 
 from .build import build_chunks
-from .download import DEFAULT_CATEGORIES, download_medlineplus, download_wikipedia
+from .download import (
+    DEFAULT_CATEGORIES,
+    download_medlineplus,
+    download_wikipedia,
+    search_categories,
+)
 
 
 def main() -> None:
@@ -18,14 +23,20 @@ def main() -> None:
     wiki.add_argument("--limit", type=int, default=500)
     wiki.add_argument("--depth", type=int, default=1)
 
+    cats = sub.add_parser("categories", help="Vikipedi'de kategori adı ara")
+    cats.add_argument("--lang", choices=["tr", "en"], default="tr")
+    cats.add_argument("query")
+
     sub.add_parser("build", help="ham veriden data/chunks.jsonl üret")
 
     args = parser.parse_args()
     data_dir = get_settings().data_dir
 
     if args.cmd == "medlineplus":
-        for p in download_medlineplus(data_dir / "raw"):
-            print("indirildi:", p)
+        print("yazıldı:", download_medlineplus(data_dir / "raw"))
+    elif args.cmd == "categories":
+        for title in search_categories(args.lang, args.query):
+            print(title)
     elif args.cmd == "wikipedia":
         cats = args.category or DEFAULT_CATEGORIES[args.lang]
         path = download_wikipedia(data_dir / "raw", args.lang, cats, args.limit, args.depth)

@@ -4,13 +4,18 @@ import pytest
 
 from medrag.ingest.build import build_chunks
 
-XML = """<health-topics><health-topic id="1" language="English" title="Flu" url="https://x/flu">
-<full-summary>&lt;p&gt;Flu is an infection.&lt;/p&gt;</full-summary></health-topic></health-topics>"""
+ROW = {
+    "id": "1",
+    "language": "English",
+    "title": "Flu",
+    "url": "https://x/flu",
+    "summary_html": "<p>Flu is an infection.</p>",
+}
 
 
 def test_build_chunks_from_raw_and_local(tmp_path):
     (tmp_path / "raw" / "medlineplus").mkdir(parents=True)
-    (tmp_path / "raw" / "medlineplus" / "mplus_topics_2026-01-01.xml").write_text(XML)
+    (tmp_path / "raw" / "medlineplus" / "topics.jsonl").write_text(json.dumps(ROW))
     (tmp_path / "raw" / "wikipedia").mkdir()
     page = {"pageid": 2, "title": "Grip", "extract": "Grip bir hastalıktır."}
     (tmp_path / "raw" / "wikipedia" / "tr.jsonl").write_text(json.dumps(page, ensure_ascii=False))
