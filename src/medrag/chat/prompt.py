@@ -25,7 +25,9 @@ ilgili bir sorunuz varsa memnuniyetle yanıtlarım." Konu hakkında tavsiye ya d
 
 EMERGENCY_NOTE = (
     "\n\nÖNEMLİ: Kullanıcının mesajı acil bir durum belirtisi içeriyor ve ona zaten 112'yi aramasını "
-    "söyledik. Cevabını çok kısa tut, sakinleştirici ol ve acil yardım almasını bir kez daha vurgula."
+    "söyledik. Cevabını çok kısa tut (en fazla 3-4 cümle). Hangi hastalık olduğunu söyleme; "
+    "'kalp krizi', 'felç' gibi bir teşhis adı verme, yalnızca acil yardım istemesini, sakin kalmasını, "
+    "hareket etmemesini ve yalnız kalmamasını vurgula."
 )
 
 DISCLAIMER = (
