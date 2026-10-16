@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     llm_model: str = "auto"
 
     # --- Belirti değerlendirme (iş akışı D) ---
+    assess_model: str = "auto"  # değerlendirmeden sonra örn. "deepseek-v4.1-flash" yapılabilir
+    assess_temperature: float = 0.2
+    assess_max_tokens: int = 4000  # düşünen modeller için cömert
+    assess_sources_k: int = 4
 
     # --- Tahlil ve görsel okuma (iş akışı E) ---
 
