@@ -16,3 +16,14 @@ cp .env.example .env   # ANTHROPIC_API_KEY'i doldur
 pytest
 ruff check .
 ```
+
+## Veri hattı
+
+```bash
+python -m medrag.ingest medlineplus              # MedlinePlus XML -> data/raw/medlineplus
+python -m medrag.ingest wikipedia --lang tr      # Vikipedi -> data/raw/wikipedia/tr.jsonl
+python -m medrag.ingest build                    # -> data/chunks.jsonl
+```
+
+Kendi `.txt`/`.md` dosyalarını `data/local/` altına koyarsan onlar da işlenir.
+İndirme için `medlineplus.gov` ve `*.wikipedia.org` adreslerine ağ erişimi gerekir.

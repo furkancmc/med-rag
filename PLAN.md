@@ -11,7 +11,7 @@ Cevaplar Claude API ile üretilir, kaynak gösterilir.
 
 ## Aşamalar
 - [x] 1. İskelet: pyproject, ayarlar, CI, README
-- [ ] 2. Veri hattı: indirme, parse, chunk
+- [x] 2. Veri hattı: indirme, parse, chunk (kod hazır; gerçek veri ağ erişimi gelince indirilecek)
 - [ ] 3. İndeks: multilingual-e5-small embedding, BM25, SQLite
 - [ ] 4. Arama: hybrid (BM25 + embedding), RRF, recall@k ölçümü
 - [ ] 5. Sohbet servisi: prompt, acil durum kontrolü, Claude çağrısı, [1] [2] atıfları
