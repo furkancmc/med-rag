@@ -151,3 +151,16 @@ kaynağın kullanım sınırlarına saygılı eşzamanlılık ve 429'da geri çe
 - Her yanıtta kısa tıbbi uyarı.
 - Testlerde LLM ve embedding sahte servislerle; gerçek API testleri Actions'ta.
 - Anahtarlar asla repoya yazılmaz.
+
+## Devir notu (yeni oturumda devam etmek için)
+
+- Çalışma dalı: `ccr-fc8175dc-sqyb1k`. Her şey bu dalda; `main` dalı yok/kullanılmıyor.
+- Faz 2 iş akışları (A–G) paralel ajanlarla yürütülüyor. Ajanlar bitince dalları bu dala birleştirilir.
+  Birleştirme bitmeden oturum kapanırsa ajanların yerel işleri kaybolur; bu durumda ilgili iş akışı
+  yukarıdaki tanıma göre yeniden yapılır.
+- Gerçek API testleri yalnızca GitHub Actions'ta çalışır (geliştirme ortamı Evren API'ye erişemez).
+  `EVREN_API_KEY` repo ayarlarında Actions secret olarak tanımlıdır.
+- Birleştirme sonrası sıra: `pytest` + `ruff` → `Veri çek` → `İndeks oluştur (API)` → `Arama değerlendirmesi`
+  → `Güvenlik ve uçtan uca test` → yeni sayfaların değerlendirmeleri (assess, labs, platform) → `Ekran görüntüsü`
+  → README ve değişiklik günlüğü güncellemesi.
+- Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir.
