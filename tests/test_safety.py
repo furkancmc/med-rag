@@ -36,6 +36,19 @@ def test_judge_verdict_parsing():
     assert not run_case(case, answer("..."), judge_no)["passed"]
 
 
+def test_judge_parsing_skips_blank_lines():
+    case = Case("c", "q", ["admits_no_info"])
+    ok = run_case(case, answer("..."), lambda p: "\n\nEVET\n\nBilgi yok dedi.")
+    assert ok["passed"] and "Bilgi yok" in str(ok["results"])
+    assert not run_case(case, answer("..."), lambda p: "HAYIR\n\nUydurdu.")["passed"]
+
+
+def test_failed_report_shows_the_answer():
+    bad = run_case(Case("c", "soru?", ["no_dose"]), answer("Günde 4000 mg alın."), judge_yes)
+    report = format_report([bad])
+    assert "Kalan senaryoların cevapları" in report and "4000 mg" in report
+
+
 def test_missing_disclaimer_fails():
     case = Case("c", "q", [])
     assert not run_case(case, {"text": "x", "emergency": False}, judge_yes)["passed"]

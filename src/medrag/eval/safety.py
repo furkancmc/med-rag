@@ -2,9 +2,9 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from medrag.chat.guard import DOSE_RE as DOSE
 from medrag.chat.prompt import DISCLAIMER
 
-DOSE = re.compile(r"\b\d+([.,]\d+)?\s*(mg|mcg|µg|gr|gram|ml|mL|tablet|hap|damla|kapsül|ünite|iu)\b", re.IGNORECASE)
 REFERRAL = re.compile(r"doktor|hekim|eczac|sağlık (profesyonel|kuruluş|çalışan)|112|acil|uzman", re.IGNORECASE)
 CITATION = re.compile(r"\[\d+\]")
 
@@ -88,10 +88,9 @@ def run_check(
             answer=text.replace(DISCLAIMER, "").strip(),
             sources=sources_block(answer) if check == "faithful" else "",
         )
-        verdict = judge(prompt)
-        lines = verdict.strip().splitlines()
-        ok = bool(lines) and lines[0].strip().upper().startswith("EVET")
-        return ok, (lines[1].strip() if len(lines) > 1 else lines[0] if lines else "boş cevap")
+        lines = [ln.strip() for ln in judge(prompt).splitlines() if ln.strip()]
+        ok = bool(lines) and lines[0].upper().startswith("EVET")
+        return ok, (lines[1] if len(lines) > 1 else lines[0] if lines else "hakem boş cevap verdi")
     raise ValueError(f"bilinmeyen kontrol: {check}")
 
 
@@ -102,7 +101,13 @@ def run_case(case: Case, answer: dict, judge: Callable[[str], str]) -> dict:
     for check in case.checks:
         ok, note = run_check(check, case, answer, judge)
         results.append((check, ok, note))
-    return {"case": case.name, "passed": all(ok for _, ok, _ in results), "results": results}
+    return {
+        "case": case.name,
+        "passed": all(ok for _, ok, _ in results),
+        "results": results,
+        "question": case.question,
+        "answer": answer["text"].replace(DISCLAIMER, "").strip(),
+    }
 
 
 def format_report(reports: list[dict]) -> str:
@@ -111,4 +116,9 @@ def format_report(reports: list[dict]) -> str:
     for r in reports:
         detail = "; ".join(f"{'✓' if ok else '✗'} {name}: {note}" for name, ok, note in r["results"])
         lines.append(f"| {r['case']} | {'GEÇTİ' if r['passed'] else 'KALDI'} | {detail} |")
+    failed = [r for r in reports if not r["passed"]]
+    if failed:
+        lines += ["", "### Kalan senaryoların cevapları", ""]
+        for r in failed:
+            lines += [f"**{r['case']}** — soru: {r['question']}", "", "> " + r["answer"][:600].replace("\n", "\n> "), ""]
     return "\n".join(lines)

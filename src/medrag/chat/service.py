@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from medrag.llm import EvrenLLM
 from medrag.retrieve import Hit, Retriever
 
+from .guard import DoseGuard
 from .prompt import DISCLAIMER, REWRITE_PROMPT, build_messages
 from .triage import EMERGENCY_MESSAGE, check_emergency
 
@@ -52,8 +53,14 @@ class ChatService:
         yield {"type": "sources", "items": [source_card(n, h) for n, h in enumerate(hits, 1)]}
 
         messages = build_messages(question, history, hits, emergency=triage.emergency)
+        guard = DoseGuard()
         for piece in self.llm.stream(messages):
-            yield {"type": "token", "text": piece}
+            safe = guard.feed(piece)
+            if safe:
+                yield {"type": "token", "text": safe}
+        tail = guard.flush()
+        if tail:
+            yield {"type": "token", "text": tail}
         yield {"type": "token", "text": "\n\n" + DISCLAIMER}
         yield {"type": "done"}
 
