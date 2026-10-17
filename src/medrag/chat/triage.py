@@ -43,6 +43,11 @@ SELF_HARM_RESPONSE = (
     "için size destek olabilir."
 )
 
+EMPTY_RESPONSE = (
+    "Şu an bu soruya cevap üretemedim. Lütfen soruyu biraz değiştirerek tekrar deneyin; "
+    "sağlığınızla ilgili bir endişe varsa bir hekime danışın."
+)
+
 HARMFUL_RESPONSE = (
     "Bu isteğe yardımcı olamam. Sağlıkla ilgili güvenli bir bilgi ya da destek arıyorsanız memnuniyetle "
     "yardımcı olurum; acil bir durum varsa lütfen 112'yi arayın."

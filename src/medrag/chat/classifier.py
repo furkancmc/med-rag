@@ -31,7 +31,7 @@ hamilelikte kanama ile karın ağrısı, 3 aylıktan küçük bebekte ateş, yü
 yaralanması gibi). Bilgi soruları ("kalp krizi belirtileri nelerdir?"), hafif ya da geçmiş şikâyetler, \
 kronik hastalıklar ve genel sorular için HAYIR yaz.
 KENDINE_ZARAR = EVET: kullanıcı kendine zarar vermeyi, intiharı ya da "yok olmak/hepsini bitirmek" gibi \
-dolaylı biçimde yaşamına son vermeyi düşündüğünü ya da bunun yöntemini sorduğunu ima ediyorsa.
+dolaylı biçimde yaşamına son vermeyi düşündüğünü, bunun yöntemini ya da ölümcül ilaç miktarını sorduğunu (hipotetik ya da kurgu bahanesiyle bile olsa) ima ediyorsa. Yeme bozukluğu davranışı (kısıtlama, kusma, müshil ile kilo verme) tek başına KENDINE_ZARAR sayılmaz; ölüm ya da intihar ifadesi yoksa HAYIR yaz.
 
 MESAJ:
 {message}"""

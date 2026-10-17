@@ -41,12 +41,12 @@ Hedef: daha doğru arama, daha geniş ve güncel bilgi tabanı, "doktor gibi" ya
 - Kabul: yeni kaynaklar indeksli, lisanslar kartlarda görünür, değerlendirme yeniden çalıştırılmış.
 
 ### C. Güvenlik ve doğrulama
-- [ ] Çalışma anında cevap doğrulama: akış bitince cevap cümleleri kaynaklarla karşılaştırılır,
+- [x] Çalışma anında cevap doğrulama: akış bitince cevap cümleleri kaynaklarla karşılaştırılır,
       desteklenmeyenler `verification` olayıyla işaretlenir.
-- [ ] Acil durum için ikinci katman: kurallara ek LLM sınıflandırıcı (gecikme eklememek için paralel).
-- [ ] Acil modda hastalık adı geçen cümleleri koddan çıkar (prompt kuralı yetmedi).
-- [ ] Yazıyla yazılmış dozları yakala ("iki tablet", "yarım tablet", "bir çay kaşığı").
-- [ ] Güvenlik setini 13'ten 30+ senaryoya çıkar: kaynağa gömülü talimat (prompt injection), jailbreak,
+- [x] Acil durum için ikinci katman: kurallara ek LLM sınıflandırıcı (gecikme eklememek için paralel).
+- [x] Acil modda hastalık adı geçen cümleleri koddan çıkar (prompt kuralı yetmedi).
+- [x] Yazıyla yazılmış dozları yakala ("iki tablet", "yarım tablet", "bir çay kaşığı").
+- [x] Güvenlik setini 13'ten 30+ senaryoya çıkar: kaynağa gömülü talimat (prompt injection), jailbreak,
       çocuk, gebelik, yeme bozukluğu, yanlış bilgi düzeltme, kendine zarar varyantları.
 - Kabul: tüm senaryolar gerçek API ile geçer; yanlış alarm oranı raporlanır.
 

@@ -12,6 +12,7 @@ from .guard import DiagnosisGuard, DoseGuard, GuardChain
 from .prompt import DISCLAIMER, REWRITE_PROMPT, build_messages
 from .triage import (
     EMERGENCY_MESSAGE,
+    EMPTY_RESPONSE,
     HARMFUL_RESPONSE,
     SELF_HARM_RESPONSE,
     SENSITIVE_NOTE,
@@ -161,20 +162,26 @@ class ChatService:
         messages = build_messages(
             question, history, hits, emergency=emergency, extra_note=SENSITIVE_NOTE if cls.harmful else ""
         )
-        guards = [DoseGuard()] + ([DiagnosisGuard()] if emergency else [])
-        guard = GuardChain(*guards)
         answer = ""
-        for piece in self.llm.stream(messages, max_tokens=self.answer_max_tokens):
-            safe = guard.feed(piece)
-            if safe:
-                answer += safe
-                yield {"type": "token", "text": safe}
-        tail = guard.flush()
-        if tail:
-            answer += tail
-            yield {"type": "token", "text": tail}
+        for attempt in range(2):  # düşünen model bazen hiç cevap metni üretmez: bir kez daha dene
+            guards = [DoseGuard()] + ([DiagnosisGuard()] if emergency else [])
+            guard = GuardChain(*guards)
+            raw_seen = False
+            for piece in self.llm.stream(messages, max_tokens=self.answer_max_tokens):
+                if piece.strip():
+                    raw_seen = True
+                safe = guard.feed(piece)
+                if safe:
+                    answer += safe
+                    yield {"type": "token", "text": safe}
+            tail = guard.flush()
+            if tail:
+                answer += tail
+                yield {"type": "token", "text": tail}
+            if raw_seen or answer.strip():
+                break
         if not answer.strip():
-            answer = HARMFUL_RESPONSE if cls.harmful else EMERGENCY_MESSAGE if emergency else ""
+            answer = HARMFUL_RESPONSE if cls.harmful else EMERGENCY_MESSAGE if emergency else EMPTY_RESPONSE
             if answer:
                 yield {"type": "token", "text": answer}
 
