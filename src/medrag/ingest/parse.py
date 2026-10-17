@@ -2,6 +2,7 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 
+from .cdc import LICENSE as CDC_LICENSE
 from .europepmc import article_url, clean_abstract
 from .models import Document
 from .nihods import LICENSE as NIHODS_LICENSE
@@ -175,6 +176,27 @@ def parse_nihods_factsheet(row: dict) -> Document | None:
         url=nihods_page_url(row),
         lang="en",
         license=NIHODS_LICENSE,
+        published=iso_date(row.get("published", "")),
+        retrieved_at=row.get("retrieved_at", ""),
+    )
+
+
+def parse_cdc_page(row: dict) -> Document | None:
+    """CDC sayfa satırını Document'a çevirir; bölümler '== Başlık ==' ile ayrılır."""
+    sections = row.get("sections") or []
+    if not sections or not row.get("title"):
+        return None
+    parts = [f"== {head} ==\n{text}" for head, text in sections]
+    name_tr = row.get("name_tr", "")
+    suffix = f" – {name_tr} (CDC)" if name_tr else " (CDC)"
+    return Document(
+        id=f"cdc-{row.get('slug') or slugify(row['title'])}",
+        title=f"{row['title']}{suffix}",
+        text="\n\n".join(parts),
+        source="cdc",
+        url=row.get("url", ""),
+        lang="en",
+        license=CDC_LICENSE,
         published=iso_date(row.get("published", "")),
         retrieved_at=row.get("retrieved_at", ""),
     )

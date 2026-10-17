@@ -1,13 +1,13 @@
 name: Veri çek
 
-# Tüm kaynakları (MedlinePlus, Vikipedi tr/en, Europe PMC, openFDA, NIH ODS) indirip data/raw altına
+# Tüm kaynakları (MedlinePlus, Vikipedi tr/en, Europe PMC, openFDA, NIH ODS, CDC) indirip data/raw altına
 # commit'ler, ardından chunks.jsonl üretir. Her pazar sabaha karşı (UTC) otomatik çalışır; elle de
 # çalıştırılabilir. Bir kaynağın hatası diğerlerini durdurmaz; sonda özet yazdırılır.
 on:
   workflow_dispatch:
     inputs:
       sources:
-        description: "Virgülle kaynaklar (all, medlineplus, wikipedia-tr, wikipedia-en, europepmc, openfda, nihods)"
+        description: "Virgülle kaynaklar (all, medlineplus, wikipedia-tr, wikipedia-en, europepmc, openfda, nihods, cdc)"
         default: "all"
       limit:
         description: "Kaynak başına öğe sınırı (deneme için; boş = sınırsız)"

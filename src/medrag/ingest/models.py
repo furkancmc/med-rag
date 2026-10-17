@@ -6,7 +6,7 @@ class Document:
     id: str
     title: str
     text: str
-    source: str  # medlineplus | wikipedia | europepmc | openfda | nihods | local
+    source: str  # medlineplus | wikipedia | europepmc | openfda | nihods | cdc | local
     url: str
     lang: str  # tr | en | es
     license: str
