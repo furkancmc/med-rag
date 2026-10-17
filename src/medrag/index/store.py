@@ -119,8 +119,27 @@ def _read_raw(index_dir: Path) -> np.ndarray:
     return raw.astype(np.float32)
 
 
-def load_vectors(index_dir: Path, chunks: list[dict]) -> np.ndarray:
-    """Vektörleri yükler (L2-normalize float32) ve chunk sırasıyla uyuştuğunu doğrular."""
+def check_meta(index_dir: Path, model: str, dimensions: int) -> None:
+    """İndeks başka bir modelle üretildiyse ValueError (yanlış modelin vektörleri yüklenmesin)."""
+    meta_path = index_dir / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    if meta.get("model") != model or meta.get("dimensions") != dimensions:
+        raise ValueError(
+            f"{index_dir} indeksi '{meta.get('model')}' ({meta.get('dimensions')} boyut) ile "
+            f"üretilmiş; ayarlardaki model '{model}' ({dimensions} boyut). Doğru indeks klasörünü "
+            "seç ya da embedding'i bu modelle yeniden üret."
+        )
+
+
+def load_vectors(
+    index_dir: Path, chunks: list[dict], model: str | None = None, dimensions: int | None = None
+) -> np.ndarray:
+    """Vektörleri yükler (L2-normalize float32) ve chunk sırasıyla uyuştuğunu doğrular.
+
+    `model` verilirse `meta.json` ile model adı ve boyutu da denetlenir.
+    """
+    if model is not None:
+        check_meta(index_dir, model, dimensions if dimensions is not None else 0)
     ids = json.loads((index_dir / "ids.json").read_text(encoding="utf-8"))
     if ids != [c["id"] for c in chunks]:
         raise ValueError(

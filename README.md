@@ -307,6 +307,65 @@ cümleleri kopyalamadan, günlük dille" hasta sorusu; `eval/queries.jsonl`). Ba
 
 ---
 
+### Yerel embedding (BGE-M3)
+
+Embedding API'ye bağımlı olmadan yerel GPU'da (ya da CPU'da) `BAAI/bge-m3` ile yapılabilir. **Varsayılan arka uç
+hâlâ `api` (Qwen3-8B, `data/index_qwen3`)**; yerel arka uç isteğe bağlıdır ve ayrı bir indeks klasörü kullanır
+(`data/index_bge_m3`, git'e girmez). İki indeks birbirini ezmez; `meta.json` içindeki model adı ve boyut yüklemede
+denetlenir, farklı modelin indeksi yanlışlıkla yüklenmez (açık hata verir).
+
+**Kurulum (Windows/Linux, NVIDIA GPU):**
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu124   # CUDA'lı torch (~2,5 GB)
+pip install -e ".[local]"                                               # transformers
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+**Komutlar:**
+
+```bash
+python -m medrag.ingest build                                   # data/chunks.jsonl
+python -m medrag.index embed --backend local --bench 200        # hız/VRAM ölçümü, kaydetmez
+python -m medrag.index embed --backend local                    # tüm parçalar -> data/index_bge_m3 (artımlı)
+python -m medrag.eval run --backend local --methods bm25,vector --workers 1 \
+    --out-md eval/results_bge_m3.md --out-json eval/results_bge_m3.json
+MEDRAG_EMBED_BACKEND=local uvicorn medrag.api.main:app          # sunucu yerel embedding ile
+```
+
+Ayarlar: `MEDRAG_EMBED_BACKEND=api|local`, `MEDRAG_LOCAL_EMBED_MODEL` (`BAAI/bge-m3`), `MEDRAG_LOCAL_EMBED_BATCH`
+(32; CUDA bellek yetersizliğinde otomatik yarıya iner), `MEDRAG_LOCAL_EMBED_MAX_LENGTH` (512 token),
+`MEDRAG_LOCAL_EMBED_DEVICE` (boş: GPU varsa `cuda`, yoksa `cpu`), `MEDRAG_LOCAL_INDEX_DIR`.
+Sorgu ve belgeye ek önek eklenmez (BGE-M3 kuralı); vektör [CLS] çıktısı, L2-normalize, 1024 boyut; GPU'da fp16.
+Yerel arka uçta `EVREN_API_KEY` gerekmez (arama için); sohbet LLM'i yine API kullanır.
+
+**Sunucu:** model ilk istekte (tembel) yüklenir (ısınma ~birkaç sn); GPU yoksa CPU'ya düşer (CPU'da arama sorgusu
+başına yüzlerce ms, indeks üretimi saatler). `MEDRAG_WARMUP=1` yalnız indeksi ısıtır, modeli değil.
+
+**Ölçümler** (ayrıntı: `eval/results_bge_m3.md`; RTX 4060 Laptop 8 GB):
+
+| | Qwen3-Embedding-8B (API, eski ölçüm) | BGE-M3 (yerel, yeni ölçüm) |
+|---|---|---|
+| soru / korpus | 150 soru, eski korpus | 500 soru, 33.573 parça |
+| vektör recall@1 / @5 / @10 | 0,65 / 0,85 / 0,94 | 0,53 / 0,78 / 0,86 |
+| vektör MRR@10 | 0,73 | 0,64 |
+| bm25 recall@5 | 0,46 | 0,22 |
+| embedding süresi | API (saatlerce, hız sınırı) | 356 sn (~94 parça/sn), VRAM tepe 1,4 GiB |
+| sorgu gecikmesi (soğuk) | ~3-6 sn (API) | ~0,04 sn |
+
+**Bu iki sütun aynı koşulda ölçülmedi** (farklı soru kümesi, farklı korpus; BGE-M3 sorularının %78'i İngilizce kaynağı
+hedefliyor). Yalnızca yön gösterir; kesin kıyas için aynı korpus ve 500 soruyla Qwen3'ü de yeniden ölçmek gerekir.
+Türkçe kaynaklı sorularda BGE-M3 recall@5 0,97.
+
+**Yerel reranker:** `MEDRAG_RERANK_BACKEND=local` + `MEDRAG_RERANK_ENABLED=true` ile `BAAI/bge-reranker-v2-m3`
+(varsayılan KAPALI). 100 soruluk kısa denemede genel kaliteyi artırmadı (recall@5 0,77 -> 0,72; Türkçe hedeflerde
+iyileşti, İngilizcede kötüleşti), bu yüzden kapalı.
+
+**Docker notu:** CUDA'lı torch imajı çok büyütür (torch ~2,5 GB + model ~2,3 GB; imaj birkaç GB'a çıkar) ve GPU için
+NVIDIA Container Toolkit (`--gpus all`) ister. Model imaja gömülmemeli; HF önbelleği bir volume'a bağlanmalı
+(`-v hf-cache:/root/.cache/huggingface`). Küçük imaj istenirse `api` arka ucu kullanılır (`[local]` ekstrası kurulmaz).
+Yerel model `data/` içinde değil, kullanıcının HF önbelleğinde durur; repoya girmez.
+
 ## 8. Sohbet servisi
 
 `POST /chat` (ve `POST /api/chat`) cevabı **SSE** olarak akıtır. Olaylar (`data: {json}`):
@@ -573,6 +632,7 @@ Ayarlar `MEDRAG_` önekli ortam değişkenleri ya da `.env` ile verilir (`.env.e
 | `data_dir`, `index_dir`, `top_k` | `data`, `data/index_qwen3`, `5` | Veri ve indeks yeri, cevap için kaynak sayısı |
 | `embed_api_model`, `embed_dimensions` | `qwen3-embedding-8b`, `1024` | Embedding modeli; boyut değişirse indeks yeniden üretilmeli |
 | `embed_workers`, `embed_batch_size`, `embed_query_cache_size` | `16`, `64`, `1024` | Paralel istek, istek başına metin, sorgu önbelleği |
+| `embed_backend`, `local_embed_model`, `local_embed_batch`, `local_index_dir` | `api`, `BAAI/bge-m3`, `32`, `data/index_bge_m3` | Yerel embedding ([bölüm 7](#yerel-embedding-bge-m3)); `rerank_backend` (`api`\|`local`) yerel reranker |
 | `llm_model` | `deepseek-v4.1-flash` | Sohbet modeli |
 | `answer_max_tokens`, `llm_extra_params` | `4096`, boş | Düşünen model token harcar; ek parametre JSON'u |
 | `rerank_enabled` | **`false`** | Reranker (masraf nedeniyle kapalı); `rerank_pool` 40, `rerank_model` `qwen3-reranker-8b` |

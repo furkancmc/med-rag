@@ -1,8 +1,9 @@
 import argparse
 import os
+import time
 from pathlib import Path
 
-from medrag.config import get_settings
+from medrag.config import active_embedding, get_settings
 
 from .bm25 import BM25
 from .embed import ApiEmbedder
@@ -11,8 +12,6 @@ from .tokenize import tokenize
 
 
 def check_api(settings, chunks: list[dict]) -> None:
-    import time
-
     from .embed import passage_text
 
     api_key = os.environ.get("EVREN_API_KEY")
@@ -88,8 +87,6 @@ def check_rerank(settings) -> None:
 
 def check_chat(settings) -> None:
     """Sohbet uç noktasının cevap yapısını yazdırır (içerik metni değil, alanlar ve uzunluklar)."""
-    import time
-
     from medrag.llm import EvrenLLM
 
     llm = EvrenLLM(settings.llm_api_url, settings.llm_model)
@@ -114,11 +111,42 @@ def check_chat(settings) -> None:
             print("  örnek cevap:", content[:150].replace("\n", " "), flush=True)
 
 
+def report_vram() -> None:
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            peak = torch.cuda.max_memory_allocated() / 2**30
+            print(f"VRAM tepe (ayrılan): {peak:.2f} GiB", flush=True)
+    except ImportError:
+        pass
+
+
+def bench(embedder, chunks: list[dict]) -> None:
+    """İlk çağrı model yüklemeyi içerir; ısınma sonrası süre ayrıca ölçülür."""
+    from .embed import passage_text
+
+    texts = [passage_text(c) for c in chunks]
+    start = time.time()
+    embedder.encode_passages(texts[:8])
+    print(f"model yükleme + ısınma: {time.time() - start:.1f}s", flush=True)
+    start = time.time()
+    vecs = embedder.encode_passages(texts)
+    took = time.time() - start
+    print(f"{len(texts)} parça: {took:.1f}s, {len(texts) / took:.1f} parça/sn, şekil={vecs.shape}")
+    print(f"OOM yeniden denemesi: {getattr(embedder, 'oom_retries', 0)}, grup boyutu: "
+          f"{getattr(embedder, 'batch_size', '-')}", flush=True)
+    report_vram()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m medrag.index")
     sub = parser.add_subparsers(dest="cmd", required=True)
     embed = sub.add_parser("embed", help="chunk'ları embedding'e çevirip kaydet")
-    embed.add_argument("--index-dir", help="varsayılan: <data_dir>/index")
+    embed.add_argument("--index-dir", help="varsayılan: api için <data_dir>/index, local için local_index_dir")
+    embed.add_argument("--backend", choices=("api", "local"), help="varsayılan: MEDRAG_EMBED_BACKEND")
+    embed.add_argument("--batch-size", type=int, help="yerel GPU grup boyutu (OOM'da otomatik küçülür)")
+    embed.add_argument("--bench", type=int, metavar="N", help="ilk N parçayla hız/VRAM ölç, kaydetme")
     embed.add_argument("--full", action="store_true", help="önbelleği yok say, hepsini yeniden hesapla")
     embed.add_argument(
         "--trust-legacy",
@@ -142,36 +170,57 @@ def main() -> None:
         return
 
     if args.cmd == "embed":
-        api_key = os.environ.get("EVREN_API_KEY")
-        if not api_key:
-            raise SystemExit("EVREN_API_KEY ortam değişkeni tanımlı değil")
-        embedder = ApiEmbedder(
-            settings.embed_api_url,
-            api_key,
-            settings.embed_api_model,
-            settings.embed_dimensions,
-            batch_size=settings.embed_batch_size,
-            workers=settings.embed_workers,
-        )
-        meta = {
-            "model": settings.embed_api_model,
-            "dimensions": settings.embed_dimensions,
-        }
-        index_dir = Path(args.index_dir) if args.index_dir else settings.data_dir / "index"
+        if args.backend:
+            settings.embed_backend = args.backend
+        model, dimensions, default_dir = active_embedding(settings)
+        if settings.embed_backend == "local":
+            from .local_embed import LocalEmbedder
+
+            embedder = LocalEmbedder(
+                model,
+                dimensions,
+                batch_size=args.batch_size or settings.local_embed_batch,
+                max_length=settings.local_embed_max_length,
+                device=settings.local_embed_device,
+            )
+            batch = 512  # ilerleme/önbellek adımı; asıl GPU grup boyutunu embedder belirler
+            index_dir = Path(args.index_dir) if args.index_dir else default_dir
+        else:
+            api_key = os.environ.get("EVREN_API_KEY")
+            if not api_key:
+                raise SystemExit("EVREN_API_KEY ortam değişkeni tanımlı değil")
+            embedder = ApiEmbedder(
+                settings.embed_api_url,
+                api_key,
+                model,
+                dimensions,
+                batch_size=settings.embed_batch_size,
+                workers=settings.embed_workers,
+            )
+            batch = settings.embed_batch_size * settings.embed_workers
+            index_dir = Path(args.index_dir) if args.index_dir else settings.data_dir / "index"
+        meta = {"model": model, "dimensions": dimensions}
+        if args.bench:
+            bench(embedder, chunks[: args.bench])
+            return
         if args.full:  # önbelleği yok say: boş bir dizinden başla
             cache_dir = index_dir.with_name(index_dir.name + ".__yok__")
         else:
             cache_dir = index_dir
-        batch = settings.embed_batch_size * settings.embed_workers
+        started = time.time()
         vectors, hashes, stats = embed_incremental(
             chunks,
             embedder,
             cache_dir,
-            settings.embed_api_model,
-            settings.embed_dimensions,
+            model,
+            dimensions,
             batch=batch,
             trust_legacy=args.trust_legacy,
         )
+        took = time.time() - started
+        if stats.computed:
+            print(f"süre {took:.0f}s, {stats.computed / took:.1f} parça/sn", flush=True)
+        report_vram()
         fmt = save_vectors(
             index_dir,
             [c["id"] for c in chunks],

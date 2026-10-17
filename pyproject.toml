@@ -13,6 +13,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5", "httpx2>=2"]
+# Yerel embedding (BGE-M3). CUDA'lı torch için önce:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+local = ["torch>=2.4", "transformers>=4.56"]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -23,6 +26,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["gpu: gerçek model ve GPU ister (MEDRAG_GPU_TEST=1 ile çalışır)"]
 
 [tool.ruff]
 line-length = 100

@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     embed_api_model: str = "qwen3-embedding-8b"
     embed_dimensions: int = 1024
     index_dir: Path = Path("data/index_qwen3")
+    # Embedding arka ucu: "api" (Evren) ya da "local" (yerel GPU/CPU, BGE-M3). Varsayılan api.
+    embed_backend: str = "api"  # MEDRAG_EMBED_BACKEND=api|local
+    local_embed_model: str = "BAAI/bge-m3"  # MEDRAG_LOCAL_EMBED_MODEL
+    local_embed_dimensions: int = 1024
+    local_embed_batch: int = 32  # OOM olursa otomatik küçülür
+    local_embed_max_length: int = 512  # token; daha uzun metin kesilir
+    local_embed_device: str = ""  # boş: GPU varsa cuda, yoksa cpu
+    local_index_dir: Path = Path("data/index_bge_m3")
+    # Yerel reranker (BAAI/bge-reranker-v2-m3); rerank_backend=local ve rerank_enabled=true ile açılır
+    rerank_backend: str = "api"  # MEDRAG_RERANK_BACKEND=api|local
+    local_rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    local_rerank_batch: int = 16
     embed_workers: int = 16  # paralel embedding isteği (H200: yüksek eşzamanlılık)
     embed_query_cache_size: int = 1024  # sorgu embedding LRU önbelleği; 0 kapatır
     # Reranker: vektör aramadan `rerank_pool` aday alınır, yeniden sıralanıp ilk k döner.
@@ -120,6 +132,15 @@ class Settings(BaseSettings):
     feedback_keep: int = 3
     # Hakkında bilgisi: değerlendirme raporlarının klasörü
     eval_dir: Path = Path("eval")
+
+
+def active_embedding(settings: Settings) -> tuple[str, int, Path]:
+    """Seçili arka uca göre (model adı, boyut, indeks klasörü)."""
+    if settings.embed_backend == "local":
+        return settings.local_embed_model, settings.local_embed_dimensions, settings.local_index_dir
+    if settings.embed_backend == "api":
+        return settings.embed_api_model, settings.embed_dimensions, settings.index_dir
+    raise ConfigError(f"bilinmeyen embedding arka ucu: {settings.embed_backend} (api | local)")
 
 
 def get_settings() -> Settings:

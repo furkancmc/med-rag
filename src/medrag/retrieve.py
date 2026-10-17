@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .config import ConfigError, Settings
+from .config import ConfigError, Settings, active_embedding
 from .index.bm25 import BM25
 from .index.embed import ApiEmbedder, Embedder
 from .index.store import load_chunks, load_vectors
@@ -218,7 +218,23 @@ class Retriever:
 
 
 # --- Kurulum ---
-def make_embedder(settings: Settings, api_key: str) -> ApiEmbedder:
+def make_embedder(settings: Settings, api_key: str | None = None) -> Embedder:
+    """Seçili arka uca göre embedder; yerel model ilk kullanımda (tembel) yüklenir."""
+    if settings.embed_backend == "local":
+        from .index.local_embed import LocalEmbedder
+
+        return LocalEmbedder(
+            settings.local_embed_model,
+            settings.local_embed_dimensions,
+            batch_size=settings.local_embed_batch,
+            max_length=settings.local_embed_max_length,
+            device=settings.local_embed_device,
+            query_cache_size=settings.embed_query_cache_size,
+        )
+    if settings.embed_backend != "api":
+        raise ConfigError(f"bilinmeyen embedding arka ucu: {settings.embed_backend} (api | local)")
+    if not api_key:
+        raise ConfigError("EVREN_API_KEY ortam değişkeni tanımlı değil")
     return ApiEmbedder(
         settings.embed_api_url,
         api_key,
@@ -230,7 +246,20 @@ def make_embedder(settings: Settings, api_key: str) -> ApiEmbedder:
     )
 
 
-def make_reranker(settings: Settings, api_key: str) -> ApiReranker:
+def make_reranker(settings: Settings, api_key: str | None) -> Reranker | None:
+    if settings.rerank_backend == "local":
+        from .rerank_local import LocalReranker
+
+        return LocalReranker(
+            settings.local_rerank_model,
+            batch_size=settings.local_rerank_batch,
+            doc_chars=settings.rerank_doc_chars,
+            device=settings.local_embed_device,
+        )
+    if settings.rerank_backend != "api":
+        raise ConfigError(f"bilinmeyen rerank arka ucu: {settings.rerank_backend} (api | local)")
+    if not api_key:
+        return None
     return ApiReranker(
         settings.rerank_api_url,
         api_key,
@@ -274,20 +303,22 @@ def expansion_completer(llm, max_tokens: int = EXPANSION_MAX_TOKENS):
 
 def load_retriever(settings: Settings) -> Retriever:
     api_key = os.environ.get("EVREN_API_KEY")
-    if not api_key:
+    model, dimensions, index_dir = active_embedding(settings)
+    if settings.embed_backend == "api" and not api_key:
         raise ConfigError("EVREN_API_KEY ortam değişkeni tanımlı değil")
     if not (settings.data_dir / "chunks.jsonl").exists():
         build_chunks(settings.data_dir)  # data/raw'dan deterministik olarak üretilir
     chunks = load_chunks(settings.data_dir)
-    vectors = load_vectors(settings.index_dir, chunks)
-    # Reranker ve genişletici her zaman kurulur (ağ çağrısı yapmazlar); `*_enabled` yalnızca
-    # varsayılan davranışı belirler, `search(rerank=..., multiquery=...)` ile aramada değiştirilebilir.
+    vectors = load_vectors(index_dir, chunks, model, dimensions)
+    # Reranker ve genişletici kurulur (kurulum ağ çağrısı yapmaz); `*_enabled` yalnızca varsayılan
+    # davranışı belirler, `search(rerank=..., multiquery=...)` ile aramada değiştirilebilir.
+    # Anahtar yoksa (yerel arka uç) API'ye dayanan parçalar kurulmaz.
     return Retriever(
         chunks,
         vectors,
         make_embedder(settings, api_key),
         reranker=make_reranker(settings, api_key),
-        expander=make_expander(settings, api_key),
+        expander=make_expander(settings, api_key) if api_key else None,
         rerank_enabled=settings.rerank_enabled,
         rerank_pool=settings.rerank_pool,
         multiquery_enabled=settings.multiquery_enabled,

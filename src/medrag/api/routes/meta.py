@@ -89,7 +89,11 @@ def parse_eval(eval_dir: Path) -> dict:
 @router.get("/info")
 def info(settings: Annotated[Settings, Depends(deps.get_settings)]) -> dict:
     models = {
-        "embedding": getattr(settings, "embed_api_model", None),
+        "embedding": (
+            getattr(settings, "local_embed_model", None)
+            if getattr(settings, "embed_backend", "api") == "local"
+            else getattr(settings, "embed_api_model", None)
+        ),
         "chat": getattr(settings, "llm_model", None),
         "rerank": getattr(settings, "rerank_model", None),
         "speech": getattr(settings, "speech_model", None),

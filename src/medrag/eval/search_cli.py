@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from medrag.config import Settings, get_settings
+from medrag.config import Settings, active_embedding, get_settings
 from medrag.index.store import load_chunks
 from medrag.llm import EvrenLLM, parse_extra_params
 from medrag.rerank import TEMPLATES
@@ -304,6 +304,8 @@ def register(sub) -> None:
     run.add_argument("--limit", type=int, default=0, help="sadece N soru (eşit aralıklı örnek); 0 = hepsi")
     run.add_argument("--workers", type=int, default=8, help="kalite ölçümünde paralel sorgu")
     run.add_argument("--latency-n", type=int, default=20, help="sıralı gecikme ölçümü soru sayısı; 0 = kapalı")
+    run.add_argument("--backend", choices=("api", "local"), help="embedding arka ucu (varsayılan: MEDRAG_EMBED_BACKEND)")
+    run.add_argument("--rerank-backend", choices=("api", "local"), help="reranker arka ucu (varsayılan: MEDRAG_RERANK_BACKEND)")
     run.add_argument("--queries", type=Path, default=QUERIES_PATH)
     run.add_argument("--out-md", type=Path, default=RESULTS_PATH)
     run.add_argument("--out-json", type=Path, default=RESULTS_JSON_PATH)
@@ -357,8 +359,11 @@ def settings_info(retriever: Retriever, settings: Settings, args) -> dict:
     return {
         "workers": args.workers,
         "latency_n": args.latency_n,
-        "embed_model": settings.embed_api_model,
-        "rerank_model": settings.rerank_model,
+        "embed_backend": settings.embed_backend,
+        "embed_model": active_embedding(settings)[0],
+        "rerank_model": (
+            settings.local_rerank_model if settings.rerank_backend == "local" else settings.rerank_model
+        ),
         "rerank_template": getattr(reranker, "template", settings.rerank_template),
         "rerank_doc_chars": settings.rerank_doc_chars,
         "rerank_batch_size": settings.rerank_batch_size,
@@ -370,6 +375,10 @@ def settings_info(retriever: Retriever, settings: Settings, args) -> dict:
 
 def cmd_run(args) -> None:
     settings = get_settings()
+    if args.backend:
+        settings.embed_backend = args.backend
+    if args.rerank_backend:
+        settings.rerank_backend = args.rerank_backend
     try:
         methods = parse_methods(args.methods, settings.rerank_pool)
         retriever = load_retriever(settings)
