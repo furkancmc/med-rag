@@ -16,7 +16,7 @@ from pathlib import Path
 
 from medrag.config import Settings, get_settings
 from medrag.index.store import load_chunks
-from medrag.llm import EvrenLLM
+from medrag.llm import EvrenLLM, parse_extra_params
 from medrag.rerank import TEMPLATES
 from medrag.retrieve import DEFAULT_BM25_WEIGHT, Retriever, load_retriever
 
@@ -289,7 +289,9 @@ def register(sub) -> None:
     gen = sub.add_parser("gen", help="Evren LLM ile değerlendirme sorularını üret")
     gen.add_argument("--n", type=int, default=500, help="üretilecek soru sayısı")
     gen.add_argument("--workers", type=int, default=16, help="paralel LLM isteği")
+    gen.add_argument("--model", default="deepseek-v4.1-flash", help="soru üreten LLM")
     gen.add_argument("--seed", type=int, default=42)
+    gen.add_argument("--keep", type=Path, help="bu dosyadaki mevcut soruları koru, kalanı üret")
     gen.add_argument("--out", type=Path, default=QUERIES_PATH)
     gen.set_defaults(func=cmd_gen)
 
@@ -314,14 +316,20 @@ def register(sub) -> None:
 
 def cmd_gen(args) -> None:
     settings = get_settings()
-    llm = EvrenLLM(settings.llm_api_url, settings.llm_model)
+    llm = EvrenLLM(
+        settings.llm_api_url,
+        args.model,
+        extra_params=parse_extra_params(settings.multiquery_extra_params),  # düşünme kapalı
+    )
     chunks = load_chunks(settings.data_dir)
+    existing = load_queries(args.keep) if args.keep and args.keep.exists() else []
     rows = build_queries(
         chunks,
         args.n,
-        lambda p: llm.complete([{"role": "user", "content": p}], temperature=0.7, max_tokens=200),
+        lambda p: llm.complete([{"role": "user", "content": p}], temperature=0.7, max_tokens=800),
         workers=args.workers,
         seed=args.seed,
+        existing=existing,
     )
     save_queries(args.out, rows)
     print(f"{len(rows)}/{args.n} soru üretildi -> {args.out}")

@@ -14,10 +14,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 from medrag.config import get_settings
-from medrag.llm import EvrenLLM
+from medrag.llm import EvrenLLM, parse_extra_params
 from medrag.multiquery import EXPAND_PROMPT, parse_expansions
 from medrag.rerank import TEMPLATES, ApiReranker, parse_scores
-from medrag.retrieve import EXPANSION_MAX_TOKENS, Retriever, load_retriever
+from medrag.retrieve import Retriever, expansion_completer, load_retriever
 
 from .metrics import first_relevant_rank
 from .queries import load_queries
@@ -151,11 +151,13 @@ def cmd_check(args) -> None:
         )
     if queries:
         probe_latency(retriever, queries[0]["query"], print)
-        llm = EvrenLLM(settings.llm_api_url, settings.multiquery_model)
+        llm = EvrenLLM(
+            settings.llm_api_url,
+            settings.multiquery_model,
+            extra_params=parse_extra_params(settings.multiquery_extra_params),
+        )
         probe_multiquery(
-            lambda p: llm.complete(
-                [{"role": "user", "content": p}], temperature=0.2, max_tokens=EXPANSION_MAX_TOKENS
-            ),
+            expansion_completer(llm, settings.multiquery_max_tokens),
             [PROBE_QUERY, *[q["query"] for q in queries[:2]]],
             print,
         )

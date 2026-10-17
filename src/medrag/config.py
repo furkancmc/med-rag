@@ -38,7 +38,10 @@ class Settings(BaseSettings):
     rerank_doc_chars: int = 1500  # rerank'e giden metin uzunluğu (4096 token bağlamına sığsın)
     # Çoklu sorgu: İngilizce çeviri + 1-2 Türkçe yeniden yazım, RRF ile birleşir (ölçülene kadar kapalı).
     multiquery_enabled: bool = False
-    multiquery_model: str = "auto"  # deepseek düşünürken 8-22 sn sürüyor; hızlı yönlendirici seçildi
+    multiquery_model: str = "deepseek-v4.1-flash"
+    # Düşünmeyi kapatır (kapanmazsa düşünme tokenları max_tokens'ı yer: finish_reason=length)
+    multiquery_extra_params: str = '{"chat_template_kwargs": {"enable_thinking": false}}'
+    multiquery_max_tokens: int = 3000  # düşünme kapanmasa da 3 satıra yetsin; boş/kesik cevapta artırılır
     multiquery_timeout: float = 15.0  # saniye; aşılırsa sadece orijinal sorgu kullanılır
     multiquery_original_weight: float = 1.0  # RRF'de orijinal sorgunun ağırlığı
 

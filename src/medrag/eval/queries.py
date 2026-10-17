@@ -87,20 +87,44 @@ def eligible_by_group(chunks: list[dict]) -> dict[Group, dict[str, list[dict]]]:
 
 
 def sample_chunks(
-    chunks: list[dict], n: int, seed: int = 42, exclude_docs: set[str] | None = None
+    chunks: list[dict],
+    n: int,
+    seed: int = 42,
+    exclude_docs: set[str] | None = None,
+    have: dict[Group, int] | None = None,
 ) -> list[dict]:
     """Kaynak/dil gruplarından sabit tohumla en az MIN_WORDS kelimelik chunk'lar seçer.
 
     Gruplar chunk listesinden kendiliğinden bulunur (yeni kaynaklar eklenince kod değişmez); kotalar
     `compute_quotas` ile belirlenir. Aynı dokümandan birden fazla soru üretilmez. `exclude_docs`:
-    daha önce denenmiş dokümanlar (eksik kalanı tamamlarken tekrar seçilmesin).
+    daha önce denenmiş dokümanlar (eksik kalanı tamamlarken tekrar seçilmesin). `have`: gruplarda zaten
+    bulunan soru sayısı; kotalar (mevcut + yeni) toplamına göre hesaplanır, böylece mevcut sorular korunurken
+    kaynak dengesi bozulmaz ve toplamda `n` yeni soru seçilir.
     """
+    have = have or {}
     exclude_docs = exclude_docs or set()
     groups = {
         g: {d: cs for d, cs in docs.items() if d not in exclude_docs}
         for g, docs in eligible_by_group(chunks).items()
     }
     quotas = compute_quotas({g: len(docs) for g, docs in groups.items()}, n)
+    if have:
+        capacity = {g: len(groups.get(g, {})) + have.get(g, 0) for g in set(groups) | set(have)}
+        total = compute_quotas(capacity, n + sum(have.values()))
+        quotas = {g: min(q - have.get(g, 0), len(groups.get(g, {}))) for g, q in total.items()}
+        quotas = {g: q for g, q in quotas.items() if q > 0}
+        extra = n - sum(quotas.values())  # kapasite/yuvarlama kaynaklı açık: boş kapasiteli gruplara dağıt
+        for g in sorted(groups, key=lambda g: -len(groups[g])):
+            if extra <= 0:
+                break
+            room = len(groups[g]) - quotas.get(g, 0)
+            add = min(room, extra)
+            if add > 0:
+                quotas[g] = quotas.get(g, 0) + add
+                extra -= add
+        while sum(quotas.values()) > n:  # fazlayı en büyük paydan kırp
+            biggest = max(quotas, key=lambda g: quotas[g])
+            quotas[biggest] -= 1
     picked: list[dict] = []
     for group in sorted(quotas):
         rng = random.Random(f"{seed}:{group[0]}:{group[1]}")  # grup başına bağımsız, kararlı
@@ -136,13 +160,16 @@ def normalize_question(text: str) -> str:
     return " ".join(re.sub(r"[^\w\s]", " ", text).split())
 
 
-def dedupe_queries(rows: list[dict]) -> list[dict]:
-    """Aynı (ya da neredeyse aynı) soruları eler; ilk gelen kalır, sıra korunur."""
+def dedupe_queries(rows: list[dict], protected: int = 0) -> list[dict]:
+    """Aynı (ya da neredeyse aynı) soruları eler; ilk gelen kalır, sıra korunur.
+
+    İlk `protected` satır asla elenmez (korunan mevcut sorular); sonrakiler onlarla da karşılaştırılır.
+    """
     kept: list[dict] = []
     token_sets: list[set[str]] = []
-    for row in rows:
+    for pos, row in enumerate(rows):
         tokens = set(normalize_question(row["query"]).split())
-        if any(
+        if pos >= protected and any(
             tokens == t or len(tokens & t) / max(1, len(tokens | t)) >= DEDUPE_JACCARD
             for t in token_sets
         ):
@@ -183,21 +210,42 @@ def build_queries(
     complete: Callable[[str], str],
     workers: int = 16,
     seed: int = 42,
-    rounds: int = 3,
+    rounds: int = 5,
+    existing: list[dict] | None = None,
 ) -> list[dict]:
-    """n soruya ulaşmak için üretir; elenenler (hata, İngilizce, tekrar) yeni dokümanlarla tamamlanır."""
-    rows: list[dict] = []
-    tried: set[str] = set()
+    """n soruya ulaşmak için üretir; elenenler (hata, İngilizce, tekrar) yeni dokümanlarla tamamlanır.
+
+    `existing`: korunacak mevcut sorular (başta, sırasıyla kalır); yeni sorular farklı dokümanlardan gelir.
+    """
+    rows = annotate_groups(existing or [], chunks)
+    keep = len(rows)
+    tried: set[str] = {r["doc_id"] for r in rows}
     for attempt in range(rounds):
-        sample = sample_chunks(chunks, n - len(rows), seed + attempt, tried)
+        have: dict[Group, int] = defaultdict(int)
+        for r in rows:
+            have[(r.get("source", ""), r.get("lang", ""))] += 1
+        sample = sample_chunks(chunks, n - len(rows), seed + attempt, tried, dict(have))
         if not sample:
             break
         tried |= {c["doc_id"] for c in sample}
-        rows = dedupe_queries(rows + generate_queries(sample, complete, workers))
+        rows = dedupe_queries(rows + generate_queries(sample, complete, workers), protected=keep)
         print(f"tur {attempt + 1}: {len(rows)}/{n} soru", flush=True)
         if len(rows) >= n:
             break
     return rows[:n]
+
+
+def annotate_groups(rows: list[dict], chunks: list[dict]) -> list[dict]:
+    """Eski biçimli sorulara (source/lang yok) chunk'tan kaynak ve dil ekler; diğer alanlar korunur."""
+    by_id = {c["id"]: c for c in chunks}
+    out = []
+    for row in rows:
+        row = dict(row)
+        chunk = by_id.get(row.get("chunk_id", ""))
+        if chunk and "source" not in row:
+            row["source"], row["lang"] = chunk.get("source", ""), chunk.get("lang", "")
+        out.append(row)
+    return out
 
 
 def save_queries(path: Path, rows: list[dict]) -> None:

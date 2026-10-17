@@ -22,6 +22,31 @@ def test_sample_respects_quotas_and_min_words_and_unique_docs():
     assert sample_chunks(chunks, 10) == picked  # deterministik
 
 
+def test_build_queries_keeps_existing_and_balances_groups():
+    from medrag.eval.queries import build_queries
+
+    chunks = [chunk(i) for i in range(40)] + [chunk(100 + i, "medlineplus", "en") for i in range(40)]
+    old = [{"query": "Eski soru bir mi?", "chunk_id": "d0#0", "doc_id": "d0"},
+           {"query": "Eski soru iki mi?", "chunk_id": "d100#0", "doc_id": "d100"}]
+    counter = iter(range(1000))
+    rows = build_queries(chunks, 20, lambda p: f"Tamamen farklı {next(counter)} numaralı soru nedir?",
+                         workers=1, existing=old)
+    assert rows[0]["query"] == "Eski soru bir mi?" and rows[1]["doc_id"] == "d100"
+    assert rows[0]["source"] == "wikipedia"  # eski satıra kaynak eklendi
+    assert len(rows) == 20 and len({r["doc_id"] for r in rows}) == 20  # eski dokümanlar tekrar seçilmez
+    wiki = sum(r["source"] == "wikipedia" for r in rows)
+    assert abs(wiki - (20 - wiki)) <= 2
+
+
+def test_dedupe_protects_existing_rows():
+    from medrag.eval.queries import dedupe_queries
+
+    rows = [{"query": "Grip nedir bilgi ver"}, {"query": "Grip nedir bilgi ver"},
+            {"query": "Grip nedir bilgi ver?"}]
+    assert len(dedupe_queries(rows, protected=2)) == 2
+    assert len(dedupe_queries(rows)) == 1
+
+
 def test_clean_question():
     assert clean_question('\n  "Şeker hastalığı neden olur?"\nAçıklama') == "Şeker hastalığı neden olur?"
 

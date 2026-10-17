@@ -67,6 +67,12 @@ def _json_candidates(raw: str) -> list[str] | None:
     return found or None
 
 
+def trim_truncated(raw: str) -> str:
+    """`finish_reason=length` ile kesilmiş cevapta yarım kalmış son satırı atar (tek satırsa dokunmaz)."""
+    lines = [ln for ln in (raw or "").strip().splitlines() if ln.strip()]
+    return "\n".join(lines[:-1] if len(lines) > 1 else lines)
+
+
 def parse_expansions(raw: str, original: str, max_variants: int = 3) -> list[str]:
     """LLM cevabından yeniden yazımları çıkarır: düz satırlar ya da JSON; orijinalin kopyaları atılır."""
     raw = THINK_RE.sub("", raw or "").replace("```json", "").replace("```", "").strip()

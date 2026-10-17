@@ -62,7 +62,7 @@ jobs:
       - run: python -m medrag.ingest build
       - name: Soruları üret
         if: ${{ inputs.regenerate || hashFiles('eval/queries.jsonl') == '' }}
-        run: python -m medrag.eval gen --n "${N:-500}" --workers 16
+        run: python -m medrag.eval gen --n "${N:-500}" --workers 16 --keep eval/queries.jsonl
       - name: Reranker ve genişletme ön kontrolü
         run: python -m medrag.eval retrieval-check
         continue-on-error: true

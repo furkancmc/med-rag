@@ -22,7 +22,7 @@ from .index.embed import ApiEmbedder, Embedder
 from .index.store import load_chunks, load_vectors
 from .index.tokenize import tokenize
 from .ingest.build import build_chunks
-from .multiquery import QueryExpander
+from .multiquery import QueryExpander, trim_truncated
 from .rerank import ApiReranker, Reranker
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ RRF_K = 60  # sıralama birleştirmede standart sabit
 DEFAULT_MODE = "vector"
 DEFAULT_BM25_WEIGHT = 0.05
 MODES = ("vector", "bm25", "hybrid")
-EXPANSION_MAX_TOKENS = 2000  # düşünen modeller (deepseek) önce akıl yürütme tokenı harcar
+EXPANSION_MAX_TOKENS = 3000  # düşünen modeller (deepseek) önce akıl yürütme tokenı harcar
 
 
 @dataclass
@@ -245,16 +245,31 @@ def make_reranker(settings: Settings, api_key: str) -> ApiReranker:
 
 
 def make_expander(settings: Settings, api_key: str) -> QueryExpander:
-    from .llm import EvrenLLM
+    """Düşünmesi kapalı, kısa zaman aşımlı LLM ile genişletici; her hatada orijinal sorguya düşülür."""
+    from .llm import EvrenLLM, parse_extra_params
 
-    llm = EvrenLLM(settings.llm_api_url, settings.multiquery_model, api_key)
+    llm = EvrenLLM(
+        settings.llm_api_url,
+        settings.multiquery_model,
+        api_key,
+        extra_params=parse_extra_params(settings.multiquery_extra_params),
+        timeout=settings.multiquery_timeout,
+        max_retries=2,
+        backoff=1.0,
+    )
+    return QueryExpander(expansion_completer(llm, settings.multiquery_max_tokens))
+
+
+def expansion_completer(llm, max_tokens: int = EXPANSION_MAX_TOKENS):
+    """`prompt -> metin`: cevap `length` ile kesildiyse eksik kalan son satır atılır."""
 
     def complete(prompt: str) -> str:
-        return llm.complete(
-            [{"role": "user", "content": prompt}], temperature=0.2, max_tokens=EXPANSION_MAX_TOKENS
+        comp = llm.complete_detailed(
+            [{"role": "user", "content": prompt}], temperature=0.2, max_tokens=max_tokens
         )
+        return trim_truncated(comp.content) if comp.finish_reason == "length" else comp.content
 
-    return QueryExpander(complete)
+    return complete
 
 
 def load_retriever(settings: Settings) -> Retriever:
