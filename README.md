@@ -847,6 +847,8 @@ tests/                   birim ve API testleri
 
 ## 23. Yasal uyarı ve lisanslar
 
+**Kaynak kod lisansı: [MIT](LICENSE).** Aşağıdaki veri lisansları koddan ayrıdır.
+
 Bu proje bir eğitim ve araştırma çalışmasıdır. Ürettiği bilgiler **genel bilgilendirme** amaçlıdır; tıbbi tavsiye,
 teşhis ya da tedavi yerine geçmez. Sağlık sorunlarınız için bir sağlık profesyoneline başvurun. Acil durumda
 **112**'yi arayın.
