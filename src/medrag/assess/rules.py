@@ -88,11 +88,32 @@ VOMIT = _rx(r"kusma|kusuyor|kusuyorum|kustu")
 DIARRHEA = _rx(r"ishal|sulu disk")
 DEHYDR = _rx(r"idrar\w* .{0,15}(yok|cikmiyor|azal)|bezi islanm|bez islanm|agzi kuru|dili kuru|gozyasi yok|cok halsiz|uyusuk|emmiyor|emme")
 SIGHT = _rx(r"(ani|aniden|birdenbire)\w* .{0,25}(gorme|goz)\w* .{0,15}(kayb|kapan|bulan|gormuy)|gozum (aniden )?gormuyor|bir gozumde (gorme|perde)")
-CONFUSION = _rx(r"kafam (cok )?karis|zihin\w* karis|sasirik|oriyante|sacmal|kim oldugunu|nerede oldugunu")
+CONFUSION = _rx(
+    r"kafa(m|si|n)? (cok )?karis|zihin\w* karis|sasirik|oriyante|sacmal|kim oldugunu|nerede oldugunu"
+    r"|bilinc\w* (bulanik|kapali|kapan)|kendinde degil|tepki vermiyor|uyandirilam|uyanmiyor"
+)
+# Tıbbi inceleme (17.10.2026) ile eklenen taban kurallar: hepsi aciliyeti yalnızca yukarı çeker.
+POISON = _rx(
+    r"zehirlen|\b(ic|yut|yed|kod)\w* .{0,25}(deterjan|camasir suyu|kimyasal|temizlik|bocek|ilac\w* .{0,6}(cok|fazla)|zehirli mantar|vahsi mantar|benzin|gaz yagi)"
+    r"|(deterjan|camasir suyu|kimyasal|temizlik malzeme|bocek ilaci)\w* .{0,25}\b(ic|yut|yed)\w*"
+    r"|karbonmonoksit|soba zehir|cok fazla ilac|asiri doz"
+)
+BLOOD_VOMIT = _rx(r"kan kus|kanli kus|kahve telvesi|kusmugumda kan|kusmuk\w* .{0,10}kan")
+SUDDEN_BREATH = _rx(
+    r"(ani|aniden|birdenbire|birden)\w* .{0,25}nefes|nefes\w* .{0,25}(aniden|birdenbire|birden)"
+    r"|nefes (almiyor|alamiyor|durdu)|soluk almiyor|(mosmor|morar)\w* .{0,15}(dudak|yuz|cocuk|bebek)|(dudak|yuz)\w* .{0,10}(mosmor|morar)"
+)
+BILIOUS = _rx(r"yesil kus|safra\w* kus|kusmuk\w* .{0,10}yesil|safral")
+HYPOGLY = _rx(r"seker\w* .{0,12}(dus|dusuk)|hipoglisemi|insulin\w* .{0,25}(fazla|yanlis)")
+BLOODY_DIARRHEA = _rx(r"kanli ishal|ishal\w* .{0,12}kan\b|kan\w* ishal")
+RLQ_PAIN = _rx(r"(sag|sagda)\w* .{0,6}(alt|kasik)\w* .{0,25}(agri|sanci)|(agri|sanci)\w* .{0,25}sag alt|apandisit")
+BURN = _rx(r"\byanik|\bhaslan|kaynar su|kimyasal yan|elektrik carp")
+BURN_RED = _rx(r"genis|su topla|yuz\w*|\bel\b|elim|ayak|kimyasal|elektrik|cocug|bebek|bogaz")
+BURN_AIRWAY = _rx(r"nefes|ses\w* kisil|isli|bogaz\w* sis|duman")
 TESTIS = _rx(r"(testis|husye|yumurta)\w* .{0,25}(ani|aniden|siddetli|sisl)|(ani|aniden|siddetli)\w* .{0,20}(testis|husye)")
 HEAD_TRAUMA = _rx(r"kafa(ya|sina|mi)? .{0,15}(darbe|vur|carp|dus)|kafa travma|basimi (vur|carp)|basima .{0,10}(dustu|darbe)")
 HEAD_TRAUMA_RED = _rx(r"kusma|kustu|bayil|uyku|bilinc|sersem|kulak\w* .{0,10}kan|burn\w* .{0,10}kan|nobet")
-BLACK_STOOL = _rx(r"kanli (disk|gaita|kaka)|siyah (disk|gaita|kaka)|katran gibi|disk\w* .{0,15}kan\b")
+BLACK_STOOL = _rx(r"kanli (disk|gaita|kaka|ishal)|siyah (disk|gaita|kaka)|katran gibi|disk\w* .{0,15}kan\b")
 BLOOD_URINE = _rx(r"kanli idrar|idrar\w* .{0,15}kan|idrarimda kan|idrar\w* .{0,10}(kirmizi|pembe|kola)")
 COUGH_BLOOD = _rx(r"kan tuk|kanli balgam|oksur\w* .{0,15}kan|balgam\w* .{0,10}kan")
 JAUNDICE = _rx(r"sarilik|gozlerim saril|gozlerin\w* saril|cildim saril")
@@ -151,7 +172,7 @@ def evaluate_context(ctx: Context) -> RuleResult:
         if has(ABD_PAIN):
             res.add("Gebelikte karın/kasık ağrısı", "emergency" if has(SEVERE) else "today")
         if has(HEADACHE_RX) and has(PRESSURE_HEAD_PREG):
-            res.add("Gebelikte baş ağrısı ve görme/şişlik belirtisi", "today")
+            res.add("Gebelikte baş ağrısı ve görme/şişlik belirtisi (preeklampsi olasılığı)", "emergency")
         if has(VOMIT) and has(_rx(r"hic (yiyem|icem)|surekli|durmuyor|hic tutmuyor")):
             res.add("Gebelikte durmayan kusma", "today")
     if has(CHEST):
@@ -185,6 +206,29 @@ def evaluate_context(ctx: Context) -> RuleResult:
         res.add("Kanlı balgam/öksürük", "today")
     if has(JAUNDICE):
         res.add("Sarılık", "today")
+    if has(POISON):
+        res.add("Olası zehirlenme veya aşırı doz", "emergency")
+    if has(BLOOD_VOMIT):
+        res.add("Kanlı kusma", "emergency")
+    if has(SUDDEN_BREATH):
+        res.add("Ani başlayan nefes darlığı ya da morarma", "emergency")
+    if has(CHEST) and has(BREATH):
+        res.add("Göğüs ağrısı ile nefes darlığı birlikte", "emergency")
+    if has(COUGH_BLOOD) and has(BREATH):
+        res.add("Kanlı balgam ile nefes darlığı", "emergency")
+    if (age is not None and age <= 2 or months is not None) and has(BILIOUS):
+        res.add("Bebekte/küçük çocukta yeşil (safralı) kusma", "emergency")
+    if has(HYPOGLY):
+        res.add("Düşük kan şekeri belirtisi", "today")
+    if has(BLOODY_DIARRHEA):
+        res.add("Kanlı ishal", "today")
+    if has(RLQ_PAIN) or (has(ABD_PAIN) and fever):
+        res.add("Ateşle birlikte ya da sağ alt karın ağrısı (apandisit olasılığı)", "today")
+    if has(BURN):
+        if has(BURN_AIRWAY):
+            res.add("Nefes yolunu ilgilendirebilen yanık", "emergency")
+        elif has(BURN_RED) or (age is not None and age < 5):
+            res.add("Geniş, yüz/el/ayak, kimyasal/elektrik ya da çocukta yanık", "today")
     if has(HIGH_FEVER):
         res.add("Yüksek ateş", "today")
     if fever and has(FEVER_DAYS):

@@ -123,13 +123,14 @@ def cmd_sanity(args) -> None:
 
 def _service(ocr_model: str | None = None):
     from medrag.config import Settings
-    from medrag.llm import EvrenLLM
+    from medrag.llm import EvrenLLM, parse_extra_params
     from medrag.vision import VisionClient, VisionService
 
     s = Settings()
     models = [ocr_model] if ocr_model else [m.strip() for m in s.vision_ocr_models.split(",")]
-    return VisionService(VisionClient(s.vision_api_url), EvrenLLM(s.vision_api_url, s.vision_extract_model),
-                         models, s.vision_chat_model), s
+    extractor = EvrenLLM(s.vision_api_url, s.vision_extract_model,
+                         extra_params=parse_extra_params(s.vision_extract_extra_params))
+    return VisionService(VisionClient(s.vision_api_url), extractor, models, s.vision_chat_model), s
 
 
 def cmd_ocr(args) -> None:
@@ -181,7 +182,72 @@ def cmd_raw(args) -> None:
         print("HATA:", e)
 
 
+E2E = [  # (ad, cinsiyet, yaş, değerler, beklenen durumlar {test: durum}, acil mi)
+    ("demir eksikliği", "female", 31,
+     [("Hemoglobin", "10,2", "g/dL"), ("Ferritin", "6", "ng/mL"), ("MCV", "72", "fL"), ("Demir", "25", "µg/dL")],
+     {"Hemoglobin": "low", "Ferritin": "low", "MCV": "low", "Demir": "low"}, False),
+    ("kan yağı ve şeker", "male", 52,
+     [("Glukoz", "112", "mg/dL"), ("HbA1c", "6,0", "%"), ("LDL", "165", "mg/dL"), ("Trigliserid", "210", "mg/dL"),
+      ("HDL", "38", "mg/dL")],
+     {"Glukoz": "high", "HbA1c": "high", "LDL": "high", "Trigliserid": "high", "HDL": "low"}, False),
+    ("tiroit", "female", 40, [("TSH", "9,8", "mIU/L"), ("Serbest T4", "0,6", "ng/dL")],
+     {"TSH": "high", "Serbest T4": "low"}, False),
+    ("kritik potasyum ve kreatinin", "male", 70, [("Potasyum", "6,4", "mmol/L"), ("Kreatinin", "4,5", "mg/dL")],
+     {"Potasyum": "critical", "Kreatinin": "critical"}, True),
+    ("hepsi normal", "female", 28, [("Hemoglobin", "13,2", "g/dL"), ("Glukoz", "88", "mg/dL"), ("TSH", "2,1", "mIU/L")],
+     {"Hemoglobin": "normal", "Glukoz": "normal", "TSH": "normal"}, False),
+    ("karışık birimler", "female", 35,
+     [("Glukoz", "5,4", "mmol/L"), ("Kreatinin", "70", "µmol/L"), ("Hematokrit", "0,38", "L/L")],
+     {"Glukoz": "normal", "Kreatinin": "normal", "Hematokrit": "normal"}, False),
+    ("bilinmeyen birim", None, None, [("Glukoz", "108", "bilinmeyen")], {"Glukoz": "unknown"}, False),
+    ("karaciğer", "male", 45, [("ALT", "120", "U/L"), ("AST", "95", "U/L"), ("GGT", "80", "U/L")],
+     {"ALT": "high", "AST": "high", "GGT": "high"}, False),
+    ("vitaminler", "female", 50, [("B12", "150", "pg/mL"), ("D vitamini", "12", "ng/mL")],
+     {"B12": "low", "D vitamini": "low"}, False),
+    ("kritik sodyum", "female", 80, [("Sodyum", "121", "mmol/L")], {"Sodyum": "critical"}, True),
+]
+
+
+def cmd_e2e(args) -> None:
+    """Gerçek LLM + BM25 kaynaklarıyla tahlil yorumu senaryoları (embedding çağrısı yok)."""
+    import re
+
+    from medrag.config import Settings
+    from medrag.eval.bm25_only import load_bm25_retriever
+    from medrag.labs.service import LabService
+    from medrag.llm import EvrenLLM
+
+    s = Settings()
+    svc = LabService(load_bm25_retriever(s.data_dir), EvrenLLM(s.llm_api_url, s.labs_explain_model))
+    dose = re.compile(r"\b\d+\s*(mg|mcg|µg|ml|iu)\b(?!\s*/\s*(dl|l))", re.IGNORECASE)
+    lines = ["# Tahlil yorumu uçtan uca senaryolar (BM25 kaynaklı, gerçek LLM)", "",
+             "| Senaryo | Durumlar | Acil | Kaynak | Atıf | Doz yok | Hekim notu | sn |", "|---|---|---|---|---|---|---|---|"]
+    bad = 0
+    for name, sex, age, vals, expect, urgent in E2E:
+        t = time.time()
+        res = svc.interpret([{"test": a, "value": b, "unit": c} for a, b, c in vals], sex=sex, age=age)
+        by = {r["name"]: r["status"] for r in res["results"]}
+        ok_status = all(any(k.lower().split()[0] in n.lower() and v == st for n, st in by.items())
+                        for k, v in expect.items())
+        text = res["explanation"]
+        cited = bool(re.search(r"\[\d\]", text)) if res["sources"] else None
+        ok_dose = not dose.search(text)
+        ok_doc = bool(re.search(r"hekim|doktor", text, re.IGNORECASE)) or all(v == "normal" for v in expect.values())
+        good = ok_status and res["urgent"] == urgent and ok_dose  # hekim notu bilgilendirme (uyarı metni ayrıca döner)
+        bad += not good
+        lines.append(f"| {name} | {'ok' if ok_status else 'HATA'} | {res['urgent']} | {len(res['sources'])} | "
+                     f"{cited} | {ok_dose} | {ok_doc} | {time.time() - t:.0f} |")
+        print(lines[-1])
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"\n{len(E2E) - bad}/{len(E2E)} senaryo uygun; yazıldı: {out}")
+
+
 def register(sub) -> None:
+    p = sub.add_parser("labs-e2e", help="Tahlil yorumu uçtan uca (gerçek LLM, BM25 kaynak)")
+    p.add_argument("--out", default="eval/labs_e2e_results.md")
+    p.set_defaults(func=cmd_e2e)
     p = sub.add_parser("labs-sanity", help="Kural tabanlı tahlil yorumu kontrolü (API'siz)")
     p.set_defaults(func=cmd_sanity)
     p = sub.add_parser("labs-ocr", help="Sentetik tahlil görselleriyle OCR + çıkarım doğruluğu")

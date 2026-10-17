@@ -212,3 +212,38 @@ def test_child_under_five_with_fever_is_never_home_only():
     assert res.level in ("soon", "today", "emergency")
     adult = evaluate("30 yaşında, bir gündür hafif ateş, genel durum iyi.", Profile(age=30))
     assert adult.level == "home"
+
+
+ORDER = {"home": 0, "soon": 1, "today": 2, "emergency": 3}
+
+
+def test_medical_review_floor_rules():
+    """Tıbbi inceleme (17.10.2026) ile eklenen taban kurallar: (metin, yaş, asgari seviye)."""
+    cases = [
+        ("çocuk deterjan içti", 3, "emergency"),
+        ("kan kustum", 50, "emergency"),
+        ("nefes darlığım aniden başladı", 35, "emergency"),
+        ("göğüs ağrım ve nefes darlığım var", 50, "emergency"),
+        ("bebeğim yeşil kusuyor", 0, "emergency"),
+        ("hamileyim baş ağrım var, gözlerimde ışık çakmaları", 28, "emergency"),
+        ("yaşlı babam ateşli ve kafası karışık", 80, "emergency"),
+        ("ağzı burnu mosmor, çocuk nefes almıyor", 1, "emergency"),
+        ("diyabetim var, şekerim düştü terliyorum titriyorum", 50, "today"),
+        ("kanlı ishal, çocukta", 5, "today"),
+        ("karın ağrım sağ altta ve ateşim var", 25, "today"),
+        ("elimde geniş, su toplamış bir yanık var", 30, "today"),
+        ("yüzüme kaynar su döküldü, nefes almakta zorlanıyorum", 30, "emergency"),
+    ]
+    for text, age, minimum in cases:
+        res = evaluate(text, Profile(age=age))
+        assert ORDER[res.level] >= ORDER[minimum], (text, res.level)
+
+
+def test_medical_review_no_false_alarm_on_benign_text():
+    for text, age in [
+        ("pilav yedim, hafif mide bulantım var", 30),
+        ("baş ağrısı için ilaç içtim, geçti", 30),
+        ("hafif boğaz ağrısı ve burun akıntısı", 30),
+        ("nefes darlığım yok, sadece hafif öksürük", 30),
+    ]:
+        assert evaluate(text, Profile(age=age)).level in ("home", "soon"), text

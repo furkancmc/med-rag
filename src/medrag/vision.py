@@ -145,7 +145,7 @@ def ocr_to_lines(text: str) -> list[list[str]]:
     """OCR metnini (markdown/HTML tablo ya da düz metin) hücre listelerine böler."""
     t = re.sub(r"</t[dh]\s*>", " | ", text, flags=re.IGNORECASE)
     t = re.sub(r"</tr\s*>|<br\s*/?>", "\n", t, flags=re.IGNORECASE)
-    t = html.unescape(re.sub(r"<[^>]+>", "", t))
+    t = html.unescape(re.sub(r"<[^>]+>", "", t)).replace("**", "")
     rows = []
     for line in t.splitlines():
         line = line.strip()
@@ -179,13 +179,17 @@ def _row_from_cells(cells: list[str]) -> dict | None:
         return None
     idx = cells.index(name)
     for i in range(idx + 1, len(cells)):
+        head, _, tail = cells[i].partition(" ")  # "4,10 x10^6/µL" gibi değer+birim aynı hücrede
+        value = clean_value(cells[i])
+        if tail and _is_unit(tail.strip()):
+            value = clean_value(head)
         try:
-            parse_value(cells[i])
+            parse_value(value)
         except ValueError:
             continue
-        unit = next((c for c in cells[i + 1:] if _is_unit(c)), None)
+        unit = next((c for c in [tail.strip(), *cells[i + 1:]] if c and _is_unit(c)), None)
         ref = next((r for c in cells[i + 1:] if (r := parse_range(c)) is not None), None)
-        return _row(name, cells[i], unit, ref)
+        return _row(name, value, unit, ref)
     return None
 
 
@@ -204,11 +208,34 @@ def _row_from_line(line: str) -> dict | None:
     return _row(m.group("name").strip(" :-"), m.group("val"), unit, ref)
 
 
+_VALUE_FLAG = re.compile(
+    r"^\s*(?P<q>[<>]=?|≤|≥)?\s*(?P<n>\d+(?:[.,]\d+)?)\s*(?:HH|LL|H|L|N|A|Y|D|\*+|\++|-|↑|↓|high|low|yüksek|düşük)?\s*$"
+)
+
+
+def clean_value(raw: str) -> str:
+    """'10,9 L' / '5,9 H' gibi bayraklı sonucu sayıya indirger; anlaşılmazsa olduğu gibi bırakır."""
+    s = re.sub(r"\\[()\[\]]|\$", "", html.unescape(str(raw))).strip()
+    m = _VALUE_FLAG.match(s)
+    return (m.group("q") or "") + m.group("n") if m else s
+
+
+def clean_unit(raw: str | None) -> str | None:
+    """OCR'ın bıraktığı HTML/LaTeX artıklarını birimden temizler (sup etiketi -> ^, LaTeX parantezi atılır)."""
+    if raw is None:
+        return None
+    s = html.unescape(str(raw))
+    s = re.sub(r"</?sup>", lambda m: "" if m.group(0)[1] == "/" else "^", s, flags=re.IGNORECASE)
+    s = re.sub(r"<[^>]+>|\\[()\[\]]|[${}]", "", s)
+    s = s.replace("\\mu", "µ").replace("\\times", "x").replace("×", "x").strip()
+    return s or None
+
+
 def _row(name: str, value: str, unit: str | None, ref: tuple | None) -> dict:
     return {
         "test": name.strip(),
-        "value": value.strip(),
-        "unit": unit,
+        "value": clean_value(value),
+        "unit": clean_unit(unit),
         "ref_low": None if not ref else ref[0],
         "ref_high": None if not ref else ref[1],
     }
@@ -238,8 +265,8 @@ def parse_llm_rows(raw: str) -> list[dict]:
             continue
         out.append({
             "test": str(it["test"]).strip(),
-            "value": str(it["value"]).strip(),
-            "unit": (str(it["unit"]).strip() or None) if it.get("unit") not in (None, "null") else None,
+            "value": clean_value(str(it["value"])),
+            "unit": clean_unit(str(it["unit"])) if it.get("unit") not in (None, "null") else None,
             "ref_low": it.get("ref_low"),
             "ref_high": it.get("ref_high"),
         })

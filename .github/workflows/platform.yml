@@ -28,6 +28,6 @@ jobs:
           for i in $(seq 1 30); do curl -fs http://localhost:8000/health && break; sleep 2; done
           curl -fs http://localhost:8000/health
           curl -fs -o /dev/null http://localhost:8000/
-          curl -fsI http://localhost:8000/ | grep -i content-security-policy
+          curl -fs -D - -o /dev/null http://localhost:8000/ | grep -i content-security-policy
           curl -fs http://localhost:8000/api/meta/info
           docker logs medrag | tail -n 20

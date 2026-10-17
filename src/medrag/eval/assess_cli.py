@@ -34,6 +34,7 @@ def register(sub) -> None:
     p.add_argument("--model", default=None, help="değerlendirme modeli (varsayılan: ayarlardaki assess_model)")
     p.add_argument("--concurrency", type=int, default=8)
     p.add_argument("--real-retriever", action="store_true", help="gerçek embedding ile kaynak ara (maliyetli)")
+    p.add_argument("--bm25", action="store_true", help="yalnızca BM25 ile kaynak ara (embedding çağrısı yok)")
     p.add_argument("--out", default=str(OUT_PATH))
     p.set_defaults(func=cmd_assess)
 
@@ -114,7 +115,12 @@ def cmd_assess(args) -> None:
     llm = EvrenLLM(settings.llm_api_url, model)
     patient = EvrenLLM(settings.llm_api_url, model)
     # Embedding maliyeti nedeniyle varsayılan: kaynaksız (sahte) arama; --real-retriever ile gerçek indeks.
-    retriever = load_retriever(settings) if args.real_retriever else NoSourcesRetriever()
+    if args.bm25:
+        from .bm25_only import load_bm25_retriever
+
+        retriever = load_bm25_retriever(settings.data_dir)  # embedding çağrısı yok, kaynaklı
+    else:
+        retriever = load_retriever(settings) if args.real_retriever else NoSourcesRetriever()
     service = AssessService(
         retriever, llm, settings.assess_temperature, settings.assess_max_tokens, settings.assess_sources_k
     )
