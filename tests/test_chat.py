@@ -87,3 +87,25 @@ def test_followup_is_rewritten_for_retrieval_only():
     out = svc.answer("Belirtileri neler?", history)
     assert retriever.queries == ["grip belirtileri"]
     assert "Grip ateşle" in out["text"] and out["sources"][0]["n"] == 1
+
+
+def test_empty_answer_is_retried_then_falls_back():
+    from medrag.chat.triage import EMPTY_RESPONSE
+
+    class EmptyThenOk(FakeLLM):
+        def stream(self, messages, temperature=0.3, max_tokens=1024):
+            self.calls.append(messages)
+            if len(self.calls) == 1:
+                return iter(())
+            return iter(["Grip ateşle başlar [1]."])
+
+    llm = EmptyThenOk()
+    out = ChatService(FakeRetriever(), llm, classifier=None, verifier=None).answer("Grip nedir?")
+    assert len(llm.calls) == 2 and "Grip ateşle" in out["text"]
+
+    class AlwaysEmpty(FakeLLM):
+        def stream(self, messages, temperature=0.3, max_tokens=1024):
+            return iter(())
+
+    out = ChatService(FakeRetriever(), AlwaysEmpty(), classifier=None, verifier=None).answer("Grip nedir?")
+    assert EMPTY_RESPONSE in out["text"]
