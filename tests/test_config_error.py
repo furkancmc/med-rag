@@ -11,7 +11,7 @@ from medrag.retrieve import load_retriever
 def test_missing_key_is_config_error(monkeypatch, tmp_path):
     monkeypatch.delenv("EVREN_API_KEY", raising=False)
     with pytest.raises(ConfigError):
-        load_retriever(Settings(data_dir=tmp_path))
+        load_retriever(Settings(data_dir=tmp_path, embed_backend="api"))
 
 
 def test_llm_missing_key_is_both_llm_and_config_error(monkeypatch):
@@ -22,6 +22,7 @@ def test_llm_missing_key_is_both_llm_and_config_error(monkeypatch):
 
 
 def test_api_returns_503_instead_of_crashing_without_key(monkeypatch):
+    monkeypatch.setenv("MEDRAG_EMBED_BACKEND", "api")  # yerel arka uç anahtar istemez
     monkeypatch.delenv("EVREN_API_KEY", raising=False)
     deps.reset()
     client = TestClient(create_app(), raise_server_exceptions=True)

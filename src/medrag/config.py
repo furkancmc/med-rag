@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     embed_dimensions: int = 1024
     index_dir: Path = Path("data/index_qwen3")
     # Embedding arka ucu: "api" (Evren) ya da "local" (yerel GPU/CPU, BGE-M3). Varsayılan api.
-    embed_backend: str = "api"  # MEDRAG_EMBED_BACKEND=api|local
+    embed_backend: str = "local"  # MEDRAG_EMBED_BACKEND=local|api (varsayılan: yerel BGE-M3)
     local_embed_model: str = "BAAI/bge-m3"  # MEDRAG_LOCAL_EMBED_MODEL
     local_embed_dimensions: int = 1024
     local_embed_batch: int = 32  # OOM olursa otomatik küçülür

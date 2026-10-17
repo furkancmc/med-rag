@@ -80,8 +80,8 @@ gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servisler
 | Arayüz (4 sayfa, PWA, tema) | Doğrulandı | Microsoft Edge, 390 px, açık/koyu: JS hatası yok, yatay kaydırma yok |
 | Docker imajı | Doğrulandı | Derlendi, konteyner `healthy`, root olmayan kullanıcı, tüm sayfalar 200 |
 | Sunucu sertleştirme (hız sınırı, erişim kodu, CSP) | Testle | Çok işçili çalışmada sayaçlar işçi başınadır |
-| Ses tanıma (`qwen3-asr-1.7b`) | **Doğrulanmadı** | Uç nokta ve iki istek biçimi hazır; gerçek ses ile denenmedi (seçenek olarak duruyor) |
-| Reranker (`qwen3-reranker-8b`) | Kod hazır, **kapalı** | Küçük örnekte işe yaradı; masraf nedeniyle varsayılan kapalı, tam ölçüm ertelendi |
+| Ses tanıma (`qwen3-asr-1.7b`) | **Sentetik sesle doğrulandı** | `/audio/transcriptions` Actions'ta Türkçe sentetik sesi çözdü (bir kelime hatalı); gerçek insan sesiyle denenmedi |
+| Reranker (`bge-reranker-v2-m3`, yerel) | Kod hazır, **kapalı** | 500 soruda genel kaliteyi düşürdü (Türkçe kaynakta iyileştirdi); ayrıntı: [Arama](#7-arama-ölçümler-ve-kararlar) |
 | Çoklu sorgu genişletme | Kod hazır, kapalı | Ölçülene kadar kapalı |
 | Yeni veri (~32.7 bin parça) | **İndekse girmedi** | Çekildi ve parçalandı ama embedding'i hesaplanmadı (masraf) |
 
@@ -178,12 +178,12 @@ yalnızca `EVREN_API_KEY` ortam değişkeninden okunur; repoya, loga ya da hata 
 | Görev | Model | Neden bu model |
 |---|---|---|
 | Sohbet, belirti ve tahlil açıklaması, doğrulama hakemi, acil sınıflandırıcı, bilgi çıkarımı | `deepseek-v4.1-flash` | Proje sahibinin seçimi: ajan/kod görevlerinde güçlü, 1M bağlam, ayarlanabilir düşünme bütçesi. Yan görevlerde (hakem, sınıflandırıcı) düşünme kapatılır (`enable_thinking: false`) ki hızlı olsun |
-| Embedding | `qwen3-embedding-8b` (1024 boyut) | Çok dilli; Türkçe soruyla İngilizce kaynağı eşleştirir. 4096 boyutun ilk 1024'üne kesilip normalize edilir (depolama 4'te 1) |
-| Yeniden sıralama (kapalı) | `qwen3-reranker-8b` (`POST /v1/rerank`) | Adayları yeniden sıralar; ölçüm sonucuna göre açılacak |
+| Embedding | `BAAI/bge-m3` (yerel GPU, 1024 boyut) | Çok dilli; Türkçe soruyla İngilizce kaynağı eşleştirir. API, kredi ve hız sınırı gerektirmez; 33,5 bin parça RTX 4060'ta ~6 dk |
+| Yeniden sıralama (kapalı) | `BAAI/bge-reranker-v2-m3` (yerel) | Adayları yeniden sıralar; ölçümde genel kaliteyi düşürdüğü için kapalı |
 | Çoklu sorgu (kapalı) | `auto` (hızlı yönlendirici) | deepseek düşünürken bu iş 8–22 sn sürüyor, `auto` ~0,5 sn |
 | Tahlil fotoğrafı OCR | `deepseek-ocr-2`, `dots-ocr` (`POST /v1/ocr`) | OCR modelleri sohbet ucunu reddeder, ayrı uç ister. Biri markdown, biri HTML tablo döndürür; ikisi de ayrıştırılır |
 | Görsel sohbet / ilaç kutusu | `qwen3-vl-30b` | OpenAI tarzı `image_url` ile görsel girdi |
-| Ses tanıma (denenmedi) | `qwen3-asr-1.7b` | Tarayıcıda ses kaydı → metin. Tarayıcı ses tanıma yedek olarak var |
+| Ses tanıma | `qwen3-asr-1.7b` | Tarayıcıda ses kaydı → metin. Tarayıcı ses tanıma yedek olarak var |
 | Güvenlik sınıflandırıcı (isteğe bağlı) | `qwen3-guard-4b` | Varsayılan **kapalı**: kendine zarar çıktısını doğru etiketledi ama göğüs ağrısı gibi tıbbi acilleri yakalamıyor. O işi LLM sınıflandırıcı yapıyor |
 
 **Neden yerel/açık model değil, hazır API?** Geliştirme hızı ve H200 üzerinde yüksek eşzamanlılık. Bunun bedeli,
@@ -236,7 +236,7 @@ girmiş durumda**; yeni verilerin embedding'i masraf nedeniyle hesaplanmadı ve 
 python -m medrag.ingest fetch --sources all            # tüm kaynakları paralel indir (hata yalıtımlı)
 python -m medrag.ingest fetch --sources europepmc,openfda --limit 20   # küçük deneme
 python -m medrag.ingest build                          # ham veri -> data/chunks.jsonl
-python -m medrag.index embed --index-dir data/index_qwen3   # EVREN_API_KEY gerekir, ARTIMLI
+python -m medrag.index embed --backend local               # yerel GPU, ARTIMLI -> data/index_bge_m3
 python -m medrag.index embed --full                    # önbelleği yok say, hepsini yeniden hesapla
 python -m medrag.index embed --trust-legacy            # eski (hash dosyasız) indeksi devral (ilk geçiş)
 python -m medrag.index search "göğüs ağrısı"           # BM25 ile hızlı deneme
@@ -251,7 +251,7 @@ python -m medrag.index search "göğüs ağrısı"           # BM25 ile hızlı 
 3. **Parçalama (`ingest/chunk.py`)**: başlıklara göre bölünür, uzun bölümler ~200 kelimelik (Europe PMC özetleri
    320), 30 kelime örtüşmeli parçalara ayrılır. Parça kimliği kararlıdır (`belge#n`); elenen parçalar sayılmaya
    devam ettiğinden kimlikler kaymaz.
-4. **Embedding (`index/embed.py`)**: `qwen3-embedding-8b`, vektör ilk 1024 boyuta kesilip normalize edilir.
+4. **Embedding (`index/local_embed.py`)**: yerel `BAAI/bge-m3`, fp16, 1024 boyut, L2-normalize, int8 saklanır.
    Sorgularda modelin talimat öneki kullanılır, pasajlarda kullanılmaz. Sorgu embedding'leri iş parçacığı güvenli
    bir LRU önbellekte tutulur.
 5. **Artımlı depo (`index/store.py`)**: her parça için `sha1(metin + model + boyut)` `hashes.json`'a yazılır.
@@ -268,103 +268,96 @@ Veri değişirse (parça sayısı/sırası) indeks yeniden üretilmelidir; aksi 
 
 ## 7. Arama: ölçümler ve kararlar
 
-<p align="center"><img src="docs/img/arama-sonuclari.svg" alt="Arama yöntemleri karşılaştırması" width="90%"></p>
+### Varsayılan: yerel BGE-M3 vektör arama
 
-**Yöntem:** 150 test sorusu Evren API'deki bir LLM'e yazdırıldı (sabit tohumla seçilen parçalardan, "metindeki
-cümleleri kopyalamadan, günlük dille" hasta sorusu; `eval/queries.jsonl`). Başarı: doğru doküman ilk *k* sonuçta mı?
+Embedding, kullanıcının kendi GPU'sunda (ya da CPU'da) `BAAI/bge-m3` ile yapılır; API'ye, krediye ya da hız sınırına
+bağımlılık yoktur. Vektörler 1024 boyutlu, L2-normalize ve int8 saklanır (`data/index_bge_m3`, git'e girmez).
+`meta.json` içindeki model adı ve boyut yüklemede denetlenir; farklı modelin indeksi yanlışlıkla yüklenmez.
 
-| yöntem | recall@1 | recall@3 | recall@5 | recall@10 | MRR |
-|---|---|---|---|---|---|
-| **vektör (kullanılan)** | 0,65 | 0,76 | **0,85** | **0,94** | 0,73 |
-| bm25 | 0,35 | 0,43 | 0,46 | 0,46 | 0,40 |
-| hybrid (bm25 ağırlığı 0,05) | 0,54 | 0,75 | 0,81 | 0,93 | 0,66 |
-| hybrid (bm25 ağırlığı 0,3) | 0,45 | 0,55 | 0,65 | 0,83 | 0,54 |
+### Ölçüm yöntemi
 
-**Neden vektör arama?**
-- BM25, Türkçe soru ile İngilizce kaynak arasında ortak kelime olmadığı için zayıf (soruların yarısından fazlası
-  İngilizce kaynağı hedefliyor). Vektör arama dilden bağımsızdır.
-- Hybrid ilk denemede eşit ağırlıkla vektörden *daha kötü* çıktı (recall@5: 0,50); ağırlık taramasında BM25'in en
-  küçük ağırlığı bile sonucu kötüleştirdi. Kodda dursa da kullanılmıyor.
-- *Dikkat:* sorular LLM yazımı olduğundan gerçek kullanıcı sorularından farklı olabilir; birebir terim (ilaç adı)
-  arayan sorularda BM25 daha iyi çıkabilir.
+- **Soru kümesi:** 500 Türkçe hasta sorusu (`eval/queries.jsonl`). Her biri korpustan sabit tohumla seçilen bir
+  parçadan, "metindeki cümleleri kopyalamadan, günlük dille" bir LLM'e (`deepseek-v4.1-flash`) yazdırıldı.
+- **Korpus:** 33.573 parça (MedlinePlus, Vikipedi tr/en, Europe PMC, openFDA, CDC).
+- **Başarı:** doğru parça ilk *k* sonuçta mı (recall@k) ve ilk doğru sonucun sırası (MRR@10).
+- **Dikkat:** sorular LLM yazımıdır; gerçek kullanıcı sorularından farklı olabilir. Soruların %78'i İngilizce
+  kaynağı hedefler, yani Türkçe soru ile İngilizce belge eşleştirme (çapraz dil) en zor kısımdır.
 
-### Reranker ve çoklu sorgu (kodlandı, varsayılan kapalı)
+### Sonuçlar (500 soru)
 
-- **Reranker (`rerank.py`):** vektör aramadan 40 aday alıp `qwen3-reranker-8b` ile yeniden sıralar. Büyük havuz
-  gruplara bölünüp paralel gönderilir; her doküman başlık + bölüm + en fazla 1500 karakter olarak 4096 token
-  bağlama sığdırılır; `relevance_score`/`score` anahtarlarını kabul eden tolerant ayrıştırıcı; **herhangi bir hata
-  ya da zaman aşımında vektör sırasına döner** (çökmez). Qwen3-Reranker talimat şablonu isteğe bağlıdır.
-- **Çoklu sorgu (`multiquery.py`):** LLM'den İngilizce çeviri + 1–2 Türkçe yeniden yazım alır, aramaları paralel
-  yapıp RRF ile birleştirir.
-- **Küçük gerçek deneme (12 soru, yalnızca ön kontrol, tam ölçüm değildir):** doğru dokümanın ortalama sırası
-  vektörde 2,08 iken rerank sonrası 1,25–1,33 oldu; 20 ve 40 adaylık rerank isteği ~1,2 sn sürdü.
-  Çoklu sorgu `auto` modeliyle ~0,5 sn, deepseek ile 8–22 sn sürdü.
-- **Neden kapalı?** Rerank her soruda ~40 dokümanı baştan okur (tahminen soru başına ~18 bin token) ve tam ölçüm
-  yüzlerce rerank koşusu gerektirir. Masraf nedeniyle kapatıldı ve ölçüm ertelendi
-  ([Maliyet notları](#19-maliyet-notları)). Açmak için: `MEDRAG_RERANK_ENABLED=true`.
+| yöntem | recall@1 | recall@3 | recall@5 | recall@10 | MRR@10 | ort. gecikme |
+|---|---|---|---|---|---|---|
+| **vektör (BGE-M3, kullanılan)** | **0,534** | **0,696** | **0,780** | **0,864** | **0,636** | 0,04 sn |
+| vektör + yerel rerank (havuz 20) | 0,456 | 0,596 | 0,706 | 0,826 | 0,555 | - |
+| vektör + yerel rerank (havuz 40) | 0,448 | 0,570 | 0,668 | 0,776 | 0,536 | - |
+| bm25 | 0,158 | 0,208 | 0,218 | 0,230 | 0,184 | 0,01 sn |
 
-Ölçümü yeniden çalıştırmak: `python -m medrag.eval run --methods all` (GitHub'da `Arama değerlendirmesi`).
+### Kaynak ve dile göre kırılım (recall@1 / recall@5 / MRR@10)
 
----
+| grup | soru | bm25 | vektör | vektör + rerank (20) |
+|---|---|---|---|---|
+| Vikipedi tr | 110 | 0,70 / 0,93 / 0,80 | 0,82 / 0,97 / 0,89 | 0,96 / 1,00 / 0,98 |
+| Vikipedi en | 114 | 0,01 / 0,04 / 0,02 | 0,47 / 0,75 / 0,59 | 0,34 / 0,69 / 0,48 |
+| MedlinePlus en | 276 | 0,00 / 0,01 / 0,01 | 0,45 / 0,71 / 0,55 | 0,30 / 0,59 / 0,42 |
 
-### Yerel embedding (BGE-M3)
+### Neden vektör arama?
 
-Embedding API'ye bağımlı olmadan yerel GPU'da (ya da CPU'da) `BAAI/bge-m3` ile yapılabilir. **Varsayılan arka uç
-hâlâ `api` (Qwen3-8B, `data/index_qwen3`)**; yerel arka uç isteğe bağlıdır ve ayrı bir indeks klasörü kullanır
-(`data/index_bge_m3`, git'e girmez). İki indeks birbirini ezmez; `meta.json` içindeki model adı ve boyut yüklemede
-denetlenir, farklı modelin indeksi yanlışlıkla yüklenmez (açık hata verir).
+- BM25, Türkçe soru ile İngilizce kaynak arasında ortak kelime olmadığı için İngilizce kaynaklarda neredeyse hiç
+  sonuç bulamaz. BGE-M3 çok dillidir ve dilden bağımsız eşleştirir.
+- Türkçe kaynaklı sorularda vektör aramanın recall@5 değeri 0,97'dir.
+- Hybrid (BM25 + vektör) daha önceki denemelerde vektörden daha kötü çıktı; kodda dursa da kullanılmıyor.
 
-**Kurulum (Windows/Linux, NVIDIA GPU):**
+### Reranker: ölçüldü, varsayılan kapalı
+
+`BAAI/bge-reranker-v2-m3` (yerel) vektör aramadan 20-40 aday alıp yeniden sıralar. Genel kaliteyi **düşürdü**
+(recall@1 0,534'ten 0,456'ya). Türkçe kaynaklarda belirgin iyileştirdi (recall@1 0,82'den 0,96'ya), İngilizce
+kaynaklarda kötüleştirdi. Şablon farkı (`qwen3` / `none`) sonucu değiştirmedi. Olası nedenler: Türkçe soru - İngilizce
+belge eşleştirmede reranker'ın zayıflığı ve metriğin katılığı (aynı belgenin başka ama eşit ilgili parçası da hata
+sayılır). Açmak için: `MEDRAG_RERANK_ENABLED=true`, `MEDRAG_RERANK_BACKEND=local`.
+Ölçüm dosyaları: `eval/results_bge_m3.md`, `eval/results_bge_m3_rerank.md`.
+
+### Çoklu sorgu (kodlandı, varsayılan kapalı)
+
+`multiquery.py`: LLM'den İngilizce çeviri + 1-2 Türkçe yeniden yazım alır, aramaları paralel yapıp RRF ile birleştirir.
+Tam ölçüm yapılmadı.
+
+### Kurulum ve komutlar
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu124   # CUDA'lı torch (~2,5 GB)
 pip install -e ".[local]"                                               # transformers
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
-```
 
-**Komutlar:**
-
-```bash
 python -m medrag.ingest build                                   # data/chunks.jsonl
 python -m medrag.index embed --backend local --bench 200        # hız/VRAM ölçümü, kaydetmez
 python -m medrag.index embed --backend local                    # tüm parçalar -> data/index_bge_m3 (artımlı)
-python -m medrag.eval run --backend local --methods bm25,vector --workers 1 \
+python -m medrag.eval run --methods bm25,vector --workers 1 \
     --out-md eval/results_bge_m3.md --out-json eval/results_bge_m3.json
-MEDRAG_EMBED_BACKEND=local uvicorn medrag.api.main:app          # sunucu yerel embedding ile
+uvicorn medrag.api.main:app                                     # sunucu (varsayılan: yerel embedding)
 ```
 
-Ayarlar: `MEDRAG_EMBED_BACKEND=api|local`, `MEDRAG_LOCAL_EMBED_MODEL` (`BAAI/bge-m3`), `MEDRAG_LOCAL_EMBED_BATCH`
-(32; CUDA bellek yetersizliğinde otomatik yarıya iner), `MEDRAG_LOCAL_EMBED_MAX_LENGTH` (512 token),
-`MEDRAG_LOCAL_EMBED_DEVICE` (boş: GPU varsa `cuda`, yoksa `cpu`), `MEDRAG_LOCAL_INDEX_DIR`.
-Sorgu ve belgeye ek önek eklenmez (BGE-M3 kuralı); vektör [CLS] çıktısı, L2-normalize, 1024 boyut; GPU'da fp16.
-Yerel arka uçta `EVREN_API_KEY` gerekmez (arama için); sohbet LLM'i yine API kullanır.
+Ayarlar: `MEDRAG_EMBED_BACKEND=local|api` (varsayılan `local`), `MEDRAG_LOCAL_EMBED_MODEL` (`BAAI/bge-m3`),
+`MEDRAG_LOCAL_EMBED_BATCH` (32; CUDA bellek yetersizliğinde otomatik yarıya iner), `MEDRAG_LOCAL_EMBED_MAX_LENGTH`
+(512 token), `MEDRAG_LOCAL_EMBED_DEVICE` (boş: GPU varsa `cuda`, yoksa `cpu`), `MEDRAG_LOCAL_INDEX_DIR`.
+Sorgu ve belgeye ek önek eklenmez (BGE-M3 kuralı). Yerel arka uçta arama için `EVREN_API_KEY` gerekmez; sohbet LLM'i
+yine API kullanır.
 
-**Sunucu:** model ilk istekte (tembel) yüklenir (ısınma ~birkaç sn); GPU yoksa CPU'ya düşer (CPU'da arama sorgusu
-başına yüzlerce ms, indeks üretimi saatler). `MEDRAG_WARMUP=1` yalnız indeksi ısıtır, modeli değil.
+### Hız ve donanım
 
-**Ölçümler** (ayrıntı: `eval/results_bge_m3.md`; RTX 4060 Laptop 8 GB):
+RTX 4060 Laptop (8 GB), fp16: 33.573 parça **356 sn** (~94 parça/sn), tepe VRAM **1,4 GiB**, bellek hatası yok.
+Sorgu gecikmesi ~0,04 sn. Model ilk istekte (tembel) yüklenir; GPU yoksa CPU'ya düşer (sorgu başına yüzlerce ms,
+indeks üretimi saatler). `MEDRAG_WARMUP=1` yalnız indeksi ısıtır, modeli değil.
 
-| | Qwen3-Embedding-8B (API, eski ölçüm) | BGE-M3 (yerel, yeni ölçüm) |
-|---|---|---|
-| soru / korpus | 150 soru, eski korpus | 500 soru, 33.573 parça |
-| vektör recall@1 / @5 / @10 | 0,65 / 0,85 / 0,94 | 0,53 / 0,78 / 0,86 |
-| vektör MRR@10 | 0,73 | 0,64 |
-| bm25 recall@5 | 0,46 | 0,22 |
-| embedding süresi | API (saatlerce, hız sınırı) | 356 sn (~94 parça/sn), VRAM tepe 1,4 GiB |
-| sorgu gecikmesi (soğuk) | ~3-6 sn (API) | ~0,04 sn |
+### Docker notu
 
-**Bu iki sütun aynı koşulda ölçülmedi** (farklı soru kümesi, farklı korpus; BGE-M3 sorularının %78'i İngilizce kaynağı
-hedefliyor). Yalnızca yön gösterir; kesin kıyas için aynı korpus ve 500 soruyla Qwen3'ü de yeniden ölçmek gerekir.
-Türkçe kaynaklı sorularda BGE-M3 recall@5 0,97.
+CUDA'lı torch imajı çok büyütür (torch ~2,5 GB + model ~2,3 GB) ve GPU için NVIDIA Container Toolkit
+(`--gpus all`) ister. Model imaja gömülmemeli; HF önbelleği bir volume'a bağlanmalı
+(`-v hf-cache:/root/.cache/huggingface`). Küçük imaj istenirse `MEDRAG_EMBED_BACKEND=api` kullanılır
+(`[local]` ekstrası kurulmaz). Yerel model `data/` içinde değil, kullanıcının HF önbelleğinde durur.
 
-**Yerel reranker:** `MEDRAG_RERANK_BACKEND=local` + `MEDRAG_RERANK_ENABLED=true` ile `BAAI/bge-reranker-v2-m3`
-(varsayılan KAPALI). 100 soruluk kısa denemede genel kaliteyi artırmadı (recall@5 0,77 -> 0,72; Türkçe hedeflerde
-iyileşti, İngilizcede kötüleşti), bu yüzden kapalı.
+Ölçümü yeniden çalıştırmak: `python -m medrag.eval run --methods vector,bm25 --backend local`.
 
-**Docker notu:** CUDA'lı torch imajı çok büyütür (torch ~2,5 GB + model ~2,3 GB; imaj birkaç GB'a çıkar) ve GPU için
-NVIDIA Container Toolkit (`--gpus all`) ister. Model imaja gömülmemeli; HF önbelleği bir volume'a bağlanmalı
-(`-v hf-cache:/root/.cache/huggingface`). Küçük imaj istenirse `api` arka ucu kullanılır (`[local]` ekstrası kurulmaz).
-Yerel model `data/` içinde değil, kullanıcının HF önbelleğinde durur; repoya girmez.
+---
 
 ## 8. Sohbet servisi
 
@@ -609,7 +602,7 @@ python -m medrag.api            # http://localhost:8000
 ```
 
 İlk açılışta `data/raw` içindeki ham veriden `data/chunks.jsonl` kendiliğinden üretilir (birkaç saniye). Embedding
-indeksi (`data/index_qwen3/`) repoda hazırdır.
+indeksi (`data/index_bge_m3/`) git'e girmez; `python -m medrag.index embed --backend local` ile üretilir (~6 dk, GPU).
 
 **API anahtarı olmadan arayüzü denemek:** `python scripts/dev_server.py` (sahte servislerle; gerçek API çağrısı yapmaz).
 
@@ -629,13 +622,13 @@ Ayarlar `MEDRAG_` önekli ortam değişkenleri ya da `.env` ile verilir (`.env.e
 | Değişken (öneksiz alan adı) | Varsayılan | Anlamı |
 |---|---|---|
 | `EVREN_API_KEY` | — | **Zorunlu.** Evren API anahtarı |
-| `data_dir`, `index_dir`, `top_k` | `data`, `data/index_qwen3`, `5` | Veri ve indeks yeri, cevap için kaynak sayısı |
-| `embed_api_model`, `embed_dimensions` | `qwen3-embedding-8b`, `1024` | Embedding modeli; boyut değişirse indeks yeniden üretilmeli |
+| `data_dir`, `local_index_dir`, `top_k` | `data`, `data/index_bge_m3`, `5` | Veri ve indeks yeri, cevap için kaynak sayısı |
+| `embed_backend`, `local_embed_model` | **`local`**, `BAAI/bge-m3` | Embedding arka ucu ve modeli (`api` seçeneği duruyor); model değişirse indeks yeniden üretilmeli |
 | `embed_workers`, `embed_batch_size`, `embed_query_cache_size` | `16`, `64`, `1024` | Paralel istek, istek başına metin, sorgu önbelleği |
 | `embed_backend`, `local_embed_model`, `local_embed_batch`, `local_index_dir` | `api`, `BAAI/bge-m3`, `32`, `data/index_bge_m3` | Yerel embedding ([bölüm 7](#yerel-embedding-bge-m3)); `rerank_backend` (`api`\|`local`) yerel reranker |
 | `llm_model` | `deepseek-v4.1-flash` | Sohbet modeli |
 | `answer_max_tokens`, `llm_extra_params` | `4096`, boş | Düşünen model token harcar; ek parametre JSON'u |
-| `rerank_enabled` | **`false`** | Reranker (masraf nedeniyle kapalı); `rerank_pool` 40, `rerank_model` `qwen3-reranker-8b` |
+| `rerank_enabled` | **`false`** | Reranker (masraf nedeniyle kapalı); `rerank_pool` 40, `rerank_backend` `local` (`bge-reranker-v2-m3`) |
 | `multiquery_enabled`, `multiquery_model` | `false`, `auto` | Çoklu sorgu |
 | `verify_enabled`, `verify_model`, `verify_budget_seconds` | `true`, `deepseek-v4.1-flash`, `20` | Cevap doğrulama |
 | `classifier_enabled`, `classifier_model`, `classifier_timeout_seconds` | `true`, `deepseek-v4.1-flash`, `8` | İkinci katman acil sınıflandırıcı |
@@ -809,7 +802,7 @@ tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Dep
 |---|---|
 | `503 config_error` / `EVREN_API_KEY ... tanımlı değil` | Anahtarı ortam değişkeni ya da `.env` ile ver |
 | "Şu an cevap veremiyorum" | Sunucu API'ye ulaşamıyor olabilir (ağ, anahtar, kota); ayrıntı sunucu logunda |
-| `Vektörler mevcut chunk listesiyle uyuşmuyor` | Veri değişti; `python -m medrag.index embed --index-dir data/index_qwen3` |
+| `Vektörler mevcut chunk listesiyle uyuşmuyor` | Veri değişti; `python -m medrag.index embed --backend local` |
 | `HTTP 429` | API ya da sunucu hız sınırı; istemci geri çekilip yeniden dener, sürerse paralelliği azalt |
 | `LLM boş cevap verdi` | Düşünen model token bütçesini tüketmiş olabilir; `answer_max_tokens`'ı artır |
 | Doğrulama hiç görünmüyor | Acil, konu dışı, kaynaksız ya da çok kısa cevaplarda atlanır; arayüz "olay yok"u da işler |
@@ -840,7 +833,7 @@ src/medrag/
   api/routes/            assess, labs, vision, speech, feedback, meta
   web/                   index/assess/labs/about.html + static/ (base.css, common.js, chat.js, sw.js, PWA)
   eval/                  değerlendirmeler; her *_cli.py kendi alt komutunu ekler
-data/raw/, data/index_qwen3/   ham kaynaklar ve embedding indeksi (repoda)
+data/raw/                      ham kaynaklar (repoda); data/index_bge_m3/ indeks (yerelde üretilir)
 eval/                    test soruları ve sonuç raporları
 docs/screens/, docs/img/ ekran görüntüleri ve diyagramlar
 docs/gorevler/           iş akışı görev tarifleri (A–G)
