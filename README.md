@@ -682,7 +682,6 @@ API'ye erişen işler Actions'ta çalıştırılabilir; `EVREN_API_KEY` repo aya
 |---|---|
 | `CI` (`ci.yml`) | Her push'ta `ruff` ve `pytest` |
 | `Veri çek` (`fetch-data.yml`) | Haftalık (pazar 03:17 UTC) ve elle: kaynakları indirir, `data/raw` altına commit'ler |
-| `İndeks oluştur (API)` (`build-index-api.yml`) | **Artımlı** embedding (16 paralel istek); `full` ve `trust_legacy` girdileri |
 | `Arama değerlendirmesi` (`eval.yml`) | Soru üretir, yöntemleri karşılaştırır; `n`, `regenerate`, `methods` girdileri |
 | `Güvenlik ve uçtan uca test` (`safety.yml`) | 40 senaryo; isteğe bağlı model karşılaştırması |
 | `Belirti değerlendirme` (`assess.yml`) | 19 senaryoyu gerçek modelle koşar |

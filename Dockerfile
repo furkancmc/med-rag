@@ -5,21 +5,24 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install . && useradd --create-home --uid 10001 medrag
+# Yerel BGE-M3 için CPU torch. GPU gerekiyorsa CUDA'lı torch tabanlı bir imaj kullanın (README bölüm 7).
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip install ".[local]" && useradd --create-home --uid 10001 medrag
 
-# Ham veri ve embedding indeksi imaja girer; chunk dosyası ilk açılışta üretilir.
+# Ham veri imaja girer; chunk dosyası ilk açılışta üretilir. Embedding indeksi imajda YOK:
+# `python -m medrag.index embed --backend local` ile üretilip /app/data/index_bge_m3 olarak bağlanır (volume).
 COPY data/raw ./data/raw
-COPY data/index_qwen3 ./data/index_qwen3
 COPY eval/results.md eval/safety_results.md ./eval/
-# Geri bildirim ve chunk dosyası yazılabilsin diye data klasörü kullanıcıya verilir.
-RUN mkdir -p /app/data/feedback && chown -R medrag:medrag /app/data
+# Geri bildirim, chunk dosyası ve model önbelleği yazılabilsin diye klasörler kullanıcıya verilir.
+RUN mkdir -p /app/data/feedback /app/hf && chown -R medrag:medrag /app/data /app/hf
 
 ENV MEDRAG_DATA_DIR=/app/data \
-    MEDRAG_INDEX_DIR=/app/data/index_qwen3 \
+    MEDRAG_LOCAL_INDEX_DIR=/app/data/index_bge_m3 \
+    HF_HOME=/app/hf \
     MEDRAG_EVAL_DIR=/app/eval \
     PORT=8000 \
     WEB_CONCURRENCY=1
-# EVREN_API_KEY çalıştırırken verilir. Ters vekil arkasındaysanız MEDRAG_TRUST_PROXY_HEADERS=1 ekleyin.
+# EVREN_API_KEY (sohbet LLM'i için) çalıştırırken verilir. Ters vekil arkasındaysanız MEDRAG_TRUST_PROXY_HEADERS=1 ekleyin.
 USER medrag
 EXPOSE 8000
 
