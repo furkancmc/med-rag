@@ -1,4 +1,4 @@
-﻿# Yol haritası
+# Yol haritası
 
 Açık tıbbi kaynaklar üzerinde RAG ile çalışan Türkçe sağlık bilgi asistanı. Embedding ve cevap üretimi
 Evren API (OpenAI uyumlu; embedding: `qwen3-embedding-8b`, sohbet: `auto`, H200 üzerinde) ile yapılır.
