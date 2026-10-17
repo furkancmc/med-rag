@@ -11,7 +11,7 @@ from typing import Any
 
 from medrag.config import Settings
 
-_lock = threading.Lock()
+_lock = threading.RLock()  # fabrikalar birbirini çağırır (chat_service -> retriever); Lock kendini kilitlerdi
 _cache: dict[str, Any] = {}
 
 

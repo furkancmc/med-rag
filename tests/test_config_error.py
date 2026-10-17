@@ -31,3 +31,20 @@ def test_api_returns_503_instead_of_crashing_without_key(monkeypatch):
     body = resp.json()
     assert body["error"] == "config_error" and "EVREN_API_KEY" in body["message"]
     deps.reset()
+
+
+def test_nested_once_does_not_deadlock():
+    # get_chat_service fabrikası get_retriever'ı çağırır; yeniden girilemeyen kilit ilk sohbette takılırdı.
+    import threading
+
+    deps.reset()
+    out = []
+
+    def run():
+        out.append(deps._once("outer", lambda: deps._once("inner", lambda: 42)))
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(5)
+    assert out == [42]
+    deps.reset()
