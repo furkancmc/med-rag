@@ -14,7 +14,7 @@
 
   const PAGES = [
     { href: "/", label: "Sohbet", icon: "chat" },
-    { href: "/assess", label: "Değerlendir", icon: "assess" },
+    { href: "/assess", label: "Belirti", icon: "assess" },
     { href: "/labs", label: "Tahlil", icon: "labs" },
     { href: "/about", label: "Hakkında", icon: "about" },
   ];
@@ -92,6 +92,7 @@
     const paint = () => {
       const t = getTheme();
       btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + THEME_ICONS[t] + "</svg>";
+      if (btn.hasAttribute("data-theme-label")) btn.insertAdjacentHTML("beforeend", "<span>" + THEME_LABELS[t] + "</span>");
       btn.setAttribute("aria-label", THEME_LABELS[t] + " (değiştirmek için dokunun)");
       btn.title = THEME_LABELS[t];
     };
@@ -281,6 +282,8 @@
     nav.setAttribute("aria-label", "Sayfalar");
     const here = location.pathname.replace(/\/$/, "") || "/";
     nav.innerHTML =
+      '<div class="nav-brand"><img class="brand-mark" src="/static/icons/icon.svg" alt="" width="40" height="40">' +
+      "<div><strong>Sağlık Asistanı</strong><span>Kaynaklara dayanan sağlık bilgisi</span></div></div>" +
       "<ul>" +
       PAGES.map((p) => {
         const current = here === p.href || (p.href !== "/" && here.startsWith(p.href));
@@ -290,7 +293,9 @@
           "<span>" + escapeHtml(p.label) + "</span></a></li>"
         );
       }).join("") +
-      "</ul>";
+      "</ul>" +
+      '<div class="nav-foot"><button type="button" class="btn btn-ghost btn-sm nav-theme" data-theme-toggle data-theme-label></button>' +
+      '<p class="nav-note">Genel bilgilendirme amaçlıdır; teşhis koymaz. Acil durumda <a href="tel:112">112</a>’yi arayın.</p></div>';
   }
 
   window.MedRAG = {

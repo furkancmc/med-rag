@@ -36,7 +36,7 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app app-labs">
   <header class="app-header">
     <div class="app-bar">
       <div class="brand">
@@ -57,7 +57,7 @@
         laboratuvardan laboratuvara değişir. Bu sayfa tanı koymaz.
       </div>
 
-      <section class="card stack" aria-label="Değer ekleme">
+      <section class="card stack pane-in" aria-label="Değer ekleme">
         <div class="tabs" role="tablist">
           <button type="button" role="tab" id="tab-manual" aria-selected="true" aria-controls="panel-manual">Değerleri gir</button>
           <button type="button" role="tab" id="tab-photo" aria-selected="false" aria-controls="panel-photo">Fotoğraftan oku</button>
@@ -88,7 +88,7 @@
         </div>
       </section>
 
-      <section class="card stack" aria-label="Değerleriniz">
+      <section class="card stack pane-in" aria-label="Değerleriniz">
         <h2 class="card-title">Değerleriniz</h2>
         <div class="grid2">
           <div class="field"><label class="label" for="sex">Cinsiyet</label>
@@ -102,7 +102,7 @@
         <div id="error" class="alert alert-danger" role="alert" hidden></div>
       </section>
 
-      <section id="out" class="stack" aria-live="polite" hidden>
+      <section id="out" class="stack pane-out" aria-live="polite" hidden>
         <div id="urgent" class="alert alert-danger" role="alert" hidden></div>
         <div class="card"><h2 class="card-title">Sonuçlar</h2><table class="res" id="res"></table></div>
         <div class="card"><h2 class="card-title">Açıklama</h2><div id="explain" class="prose"></div></div>
@@ -110,7 +110,7 @@
         <p class="disclaimer" id="disclaimer"></p>
       </section>
 
-      <section class="card stack" aria-label="İlaç kutusu tanıma">
+      <section class="card stack pane-out" aria-label="İlaç kutusu tanıma">
         <h2 class="card-title">İlaç kutusu tanı</h2>
         <p class="muted small" style="margin:0">İlaç kutusunun fotoğrafından adı ve etken maddeyi okur. Doz önerisi vermez.</p>
         <input id="med-file" class="input" type="file" accept="image/*" capture="environment" aria-label="İlaç kutusu fotoğrafı">

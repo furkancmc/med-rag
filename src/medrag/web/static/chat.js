@@ -144,7 +144,7 @@
       src.hidden = false;
       const wasOpen = src.open;
       src.innerHTML = "<summary>Kaynaklar (" + m.sources.length + ")</summary><ul class=\"source-list\">" + m.sources.map(sourceCard).join("") + "</ul>";
-      src.open = wasOpen;
+      src.open = wasOpen || matchMedia("(min-width: 1024px)").matches;
     } else src.hidden = true;
 
     const act = el.querySelector(".msg-actions");
