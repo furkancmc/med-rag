@@ -6,6 +6,7 @@ from pathlib import Path
 from .chunk import chunk_document
 from .models import Document
 from .parse import (
+    parse_cdc_page,
     parse_europepmc_article,
     parse_local_file,
     parse_medlineplus_topic,
@@ -35,6 +36,7 @@ def load_documents(raw_dir: Path, local_dir: Path) -> list[Document]:
         docs += _load(read_jsonl(jsonl), parse_wikipedia_extract, jsonl.stem)
     docs += _load(read_jsonl(raw_dir / "europepmc" / "articles.jsonl"), parse_europepmc_article)
     docs += _load(read_jsonl(raw_dir / "openfda" / "labels.jsonl"), parse_openfda_label)
+    docs += _load(read_jsonl(raw_dir / "cdc" / "pages.jsonl"), parse_cdc_page)
     docs += _load(read_jsonl(raw_dir / "nihods" / "factsheets.jsonl"), parse_nihods_factsheet)
     if local_dir.exists():
         for path in sorted(local_dir.iterdir()):

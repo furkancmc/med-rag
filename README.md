@@ -203,6 +203,7 @@ yayın/güncelleme ve çekilme tarihi saklanır ve kaynak kartında gösterilir.
 | [Europe PMC](https://europepmc.org) | 2020 sonrası, **CC BY / CC BY-SA** lisanslı derleme (review) makale özetleri | CC BY, CC BY-SA | 1.558 özet (545/550 konu) |
 | [openFDA](https://open.fda.gov) | İlaç prospektüsü: endikasyon, uyarı, yan etki, etkileşim. **Doz bölümleri bilerek alınmaz** | Kamu malı | 233/238 ilaç |
 | [NIH ODS](https://ods.od.nih.gov) | Vitamin ve mineral bilgi sayfaları | Kamu malı | **0/37**: Cloudflare 403 (bkz. aşağıda) |
+| [CDC](https://www.cdc.gov) | Hastalık ve korunma sayfaları (~97 konu sorgusu; CDC Content Services syndication API'si, hekim/istatistik/MMWR sayfaları atılır) | Kamu malı | 128 sayfa (67/97 konu; CDC kütüphanesinde olmayanlar atlanır) |
 | `data/local/` | Kendi `.txt`/`.md` dosyaların (isteğe bağlı) | Sana ait | — |
 
 **Tahlil referans aralıklarının kaynakları** (34 test; her satırda `ref_source` alanında yazılıdır): 17'si

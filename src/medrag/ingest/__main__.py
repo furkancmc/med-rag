@@ -10,6 +10,7 @@ from pathlib import Path
 from medrag.config import get_settings
 
 from .build import build_chunks
+from .cdc import download_cdc
 from .curated import curated_titles
 from .download import (
     DEFAULT_CATEGORIES,
@@ -24,7 +25,7 @@ from .nihods import download_nihods
 from .openfda import download_openfda
 from .report import SourceReport
 
-SOURCES = ("medlineplus", "wikipedia-tr", "wikipedia-en", "europepmc", "openfda", "nihods")
+SOURCES = ("medlineplus", "wikipedia-tr", "wikipedia-en", "europepmc", "openfda", "nihods", "cdc")
 # Başarısızlığı çıkış kodunu bozmayan kaynaklar (örn. NIH ODS bot koruması 403 veriyor; uyarı olarak raporlanır).
 OPTIONAL_SOURCES = frozenset({"nihods"})
 
@@ -50,6 +51,8 @@ def _runner(
         )
     if name == "nihods":
         return lambda: download_nihods(raw, limit=limit)
+    if name == "cdc":
+        return lambda: download_cdc(raw, per_topic=per_topic, limit=limit)
     raise SystemExit(f"bilinmeyen kaynak: {name} (seçenekler: {', '.join(SOURCES)})")
 
 
