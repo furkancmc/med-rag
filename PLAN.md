@@ -22,22 +22,22 @@ Hedef: daha doğru arama, daha geniş ve güncel bilgi tabanı, "doktor gibi" ya
 İşler paralel ajanlarla yürütülür; her iş akışının dosya sahipliği aşağıda tanımlıdır.
 
 ### A. Arama: reranker ve sorgu genişletme
-- [ ] Reranker katmanı: vektör aramadan 30-50 aday, yeniden sıralayıp ilk 5. Evren API'de rerank uç noktası
+- [x] Reranker katmanı: vektör aramadan 30-50 aday, yeniden sıralayıp ilk 5. Evren API'de rerank uç noktası
       varsa onu, yoksa sohbet modeliyle paralel puanlama (H200 için yüksek eşzamanlılık) kullan.
-- [ ] Çoklu sorgu: soru + İngilizce çevirisi + 1-2 yeniden yazım ile arama, sonuçları birleştir.
-- [ ] `Retriever.search(query, k)` arayüzü korunur (sohbet servisi değişmeden faydalanır).
-- [ ] Değerlendirme: vektör / vektör+rerank / çoklu sorgu+rerank karşılaştırması, gecikme ölçümü.
-- [ ] Test setini 150'den 500 soruya çıkar (yüksek eşzamanlılıkla üretim).
+- [x] Çoklu sorgu: soru + İngilizce çevirisi + 1-2 yeniden yazım ile arama, sonuçları birleştir.
+- [x] `Retriever.search(query, k)` arayüzü korunur (sohbet servisi değişmeden faydalanır).
+- [ ] Değerlendirme: vektör / vektör+rerank / çoklu sorgu+rerank karşılaştırması, gecikme ölçümü. (altyapı hazır; ölçüm 8b masrafı nedeniyle ertelendi)
+- [x] Test setini 150'den 500 soruya çıkar (yüksek eşzamanlılıkla üretim).
 - Kabul: recall@1 ve MRR'de ölçülebilir artış; sonuç `eval/results.md`'de.
 
 ### B. Veri: güncel ve kaliteli kaynaklar
-- [ ] Europe PMC: 2020 ve sonrası, CC BY lisanslı derleme (review) makalelerinin özetleri (seçili konular).
-- [ ] openFDA ilaç prospektüsleri (kamu malı): endikasyon, uyarı, yan etki, etkileşim. Doz bölümleri alınmaz.
-- [ ] CDC (kamu malı) hastalık ve korunma sayfaları.
-- [ ] Seçili Vikipedi listesini genişlet (≈400 konu; Türkiye'de sık görülen hastalıklar dahil).
-- [ ] Her parçada kaynak, lisans, yayın/güncelleme ve çekilme tarihi.
-- [ ] Embedding önbelleği: metin özeti (hash) ile sadece yeni/değişen parçalar yeniden hesaplanır.
-- [ ] Haftalık otomatik yenileme workflow'u; yüksek ama kaynakların sınırlarına saygılı eşzamanlılık.
+- [x] Europe PMC: 2020 ve sonrası, CC BY lisanslı derleme (review) makalelerinin özetleri (seçili konular).
+- [x] openFDA ilaç prospektüsleri (kamu malı): endikasyon, uyarı, yan etki, etkileşim. Doz bölümleri alınmaz.
+- [x] CDC (kamu malı) hastalık ve korunma sayfaları.
+- [x] Seçili Vikipedi listesini genişlet (≈400 konu; Türkiye'de sık görülen hastalıklar dahil).
+- [x] Her parçada kaynak, lisans, yayın/güncelleme ve çekilme tarihi.
+- [x] Embedding önbelleği: metin özeti (hash) ile sadece yeni/değişen parçalar yeniden hesaplanır.
+- [x] Haftalık otomatik yenileme workflow'u; yüksek ama kaynakların sınırlarına saygılı eşzamanlılık.
 - Kabul: yeni kaynaklar indeksli, lisanslar kartlarda görünür, değerlendirme yeniden çalıştırılmış.
 
 ### C. Güvenlik ve doğrulama
@@ -51,33 +51,33 @@ Hedef: daha doğru arama, daha geniş ve güncel bilgi tabanı, "doktor gibi" ya
 - Kabul: tüm senaryolar gerçek API ile geçer; yanlış alarm oranı raporlanır.
 
 ### D. Belirti değerlendirme (yeni sayfa)
-- [ ] Kullanıcı ana şikâyetini yazar; asistan en fazla 5 hedefli soru sorar (seçenekli).
-- [ ] Sonuç: aciliyet seviyesi (112 / bugün hekime / birkaç gün içinde randevu / evde izle), gerekçe,
+- [x] Kullanıcı ana şikâyetini yazar; asistan en fazla 5 hedefli soru sorar (seçenekli).
+- [x] Sonuç: aciliyet seviyesi (112 / bugün hekime / birkaç gün içinde randevu / evde izle), gerekçe,
       dikkat edilecek kırmızı bayraklar, kaynaklar.
-- [ ] Kural tabanlı kırmızı bayraklar LLM kararını her zaman yukarı çeker (asla aşağı çekmez).
+- [x] Kural tabanlı kırmızı bayraklar LLM kararını her zaman yukarı çeker (asla aşağı çekmez).
 - Kabul: birim testler + gerçek API ile senaryo testleri.
 
 ### E. Tahlil yorumu ve görsel okuma (yeni sayfa)
-- [ ] Sık tahliller için referans aralıkları tablosu (kaynaklı, birim dönüşümlü, yetişkin).
-- [ ] Değerleri düşük/normal/yüksek sınıflandır (kural tabanlı), açıklamayı kaynaklı LLM yazsın.
-- [ ] Tahlil sonucu fotoğrafından değer okuma ve ilaç kutusu fotoğrafından ilaç adı okuma (görsel model).
-- [ ] Görseller saklanmaz, sadece istek süresince işlenir.
+- [x] Sık tahliller için referans aralıkları tablosu (kaynaklı, birim dönüşümlü, yetişkin).
+- [x] Değerleri düşük/normal/yüksek sınıflandır (kural tabanlı), açıklamayı kaynaklı LLM yazsın.
+- [x] Tahlil sonucu fotoğrafından değer okuma ve ilaç kutusu fotoğrafından ilaç adı okuma (görsel model).
+- [x] Görseller saklanmaz, sadece istek süresince işlenir.
 
 ### F. Sunucu ve üretim hazırlığı
-- [ ] Hız sınırı (IP başına), istek boyutu sınırı, güvenlik başlıkları (CSP vb.).
-- [ ] İsteğe bağlı erişim kodu (barındırırken), geri bildirim (👍/👎) kaydı, metrik uç noktası.
-- [ ] Sorgu embedding önbelleği, yapılandırılmış log (kişisel veri yazmadan).
-- [ ] Docker: root olmayan kullanıcı, healthcheck; docker-compose; barındırma notları.
+- [x] Hız sınırı (IP başına), istek boyutu sınırı, güvenlik başlıkları (CSP vb.).
+- [x] İsteğe bağlı erişim kodu (barındırırken), geri bildirim (👍/👎) kaydı, metrik uç noktası.
+- [x] Sorgu embedding önbelleği, yapılandırılmış log (kişisel veri yazmadan).
+- [x] Docker: root olmayan kullanıcı, healthcheck; docker-compose; barındırma notları.
 
 ### G. Arayüz (modern ve sade)
-- [ ] Ortak tasarım sistemi (`web/static/base.css`), ortak yardımcılar (`web/static/common.js`).
-- [ ] Sayfalar: Sohbet, Belirti Değerlendirme, Tahlil Yorumu, Hakkında (kaynaklar, nasıl çalışır, uyarılar).
-- [ ] Alt gezinme çubuğu (telefon), koyu/açık tema, erişilebilirlik.
-- [ ] Sesle soru sorma ve sesli dinleme (tarayıcı), doğrulama işaretleri, geri bildirim butonları, PWA.
+- [x] Ortak tasarım sistemi (`web/static/base.css`), ortak yardımcılar (`web/static/common.js`).
+- [x] Sayfalar: Sohbet, Belirti Değerlendirme, Tahlil Yorumu, Hakkında (kaynaklar, nasıl çalışır, uyarılar).
+- [x] Alt gezinme çubuğu (telefon), koyu/açık tema, erişilebilirlik.
+- [x] Sesle soru sorma ve sesli dinleme (tarayıcı), doğrulama işaretleri, geri bildirim butonları, PWA.
 - Kabul: tüm sayfalar 390 px'te yatay kaydırmasız, JS hatasız; gerçek API ile ekran görüntüleri.
 
 ### H. Belgeler
-- [ ] Her birleştirmeden sonra README ve değişiklik günlüğü güncellenir.
+- [x] Her birleştirmeden sonra README ve değişiklik günlüğü güncellenir.
 
 ## Paralel çalışma düzeni
 
