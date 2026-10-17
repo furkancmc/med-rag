@@ -208,3 +208,37 @@ def test_medicine_endpoint():
     assert r.status_code == 200 and r.json()["brand_name"] == "Augmentin"
     assert r.json()["suggested_question"].startswith("Augmentin")
     assert c.post("/api/vision/medicine", files={"file": ("k.txt", b"merhaba", "text/plain")}).status_code == 415
+
+
+def test_clean_value_and_unit():
+    from medrag.vision import clean_unit, clean_value, parse_rows_deterministic
+
+    assert clean_value("10,9 L") == "10,9" and clean_value("5.9 H") == "5.9" and clean_value("<0,5") == "<0,5"
+    assert clean_value("5 mg") == "5 mg"  # bayrak olmayan ek metin korunur
+    assert clean_unit("x10<sup>6</sup>/μL") == "x10^6/μL"
+    assert clean_unit(r"\(10^3/uL\)") == "10^3/uL" and clean_unit("null ") == "null" and clean_unit(" ") is None
+    rows = parse_rows_deterministic(
+        "<table><tr><td>Hemoglobin</td><td>10,9 L</td><td>g/dL</td><td>12.0 - 15.5</td></tr></table>"
+    )
+    assert rows[0]["value"] == "10,9" and rows[0]["ref_low"] == 12.0
+
+
+def test_llm_rows_with_flags_survive():
+    from medrag.vision import finalize_rows, parse_llm_rows
+
+    rows = finalize_rows(parse_llm_rows('[{"test":"WBC","value":"11,8 H","unit":"x10<sup>3</sup>/μL"}]'))
+    assert rows[0]["value"] == "11,8" and rows[0]["test_id"] == "wbc"
+
+
+def test_deterministic_markdown_bold_flags_and_merged_unit():
+    from medrag.vision import parse_rows_deterministic
+
+    text = (
+        "| **Tetkik** | **Sonuç** | **Birim** | **Referans** |\n|---|---|---|---|\n"
+        "| Hemoglobin (HGB) | 10,9 **L** | **g/dL** | 12.0 - 15.5 |\n"
+        "| Eritrosit (RBC) | 4,10 **x10^6/μL** | **x10^6/μL** | 3.9 - 5.0 |\n"
+        "| AST (SGOT) | 19 **U/L** | **U/L** | 0 - 32 |\n"
+    )
+    rows = parse_rows_deterministic(text)
+    assert [(r["value"], r["unit"]) for r in rows] == [("10,9", "g/dL"), ("4,10", "x10^6/μL"), ("19", "U/L")]
+    assert rows[0]["ref_low"] == 12.0 and rows[0]["ref_high"] == 15.5

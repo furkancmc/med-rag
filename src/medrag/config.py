@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     vision_ocr_models: str = "deepseek-ocr-2,dots-ocr"  # sırayla denenir; virgülle ayrılmış
     vision_chat_model: str = "qwen3-vl-30b"
     vision_extract_model: str = "deepseek-v4.1-flash"
+    # Satır çıkarımı düşünmesiz çalışır (ölçüm: ~14 sn -> ~1,6 sn, aynı doğruluk)
+    vision_extract_extra_params: str = '{"chat_template_kwargs": {"enable_thinking": false}}'
     vision_max_bytes: int = 8 * 1024 * 1024
 
     # --- Sunucu (iş akışı F) ---

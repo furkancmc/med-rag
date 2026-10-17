@@ -137,6 +137,25 @@ def test_critical_values():
     assert interpret_value("Glukoz", "1.8", "mmol/L").status == "critical"
 
 
+def test_medical_review_conservative_critical_thresholds():
+    """Tıbbi inceleme (17.10.2026): eşikler temkinli tarafa çekildi (docs/tibbi-inceleme.md)."""
+    for test, value, unit, direction in [
+        ("Glukoz", "50", "mg/dL", "low"), ("Glukoz", "420", "mg/dL", "high"),
+        ("Potasyum", "6.0", "mmol/L", "high"), ("Potasyum", "3.0", "mmol/L", "low"),
+        ("Sodyum", "125", "mmol/L", "low"), ("Sodyum", "155", "mmol/L", "high"),
+        ("Kalsiyum", "12.1", "mg/dL", "high"), ("Kalsiyum", "6.9", "mg/dL", "low"),
+        ("Kreatinin", "4.2", "mg/dL", "high"), ("Total bilirubin", "10.5", "mg/dL", "high"),
+        ("HbA1c", "12.5", "%", "high"), ("ALT", "1200", "U/L", "high"), ("AST", "1100", "U/L", "high"),
+        ("Albümin", "1.8", "g/dL", "low"), ("BUN", "85", "mg/dL", "high"), ("Üre", "180", "mg/dL", "high"),
+    ]:
+        r = interpret_value(test, value, unit, sex="male")
+        assert r.status == "critical" and r.direction == direction, (test, value, r.status)
+    # eşiğin hemen içindeki değerler kritik değil
+    assert interpret_value("Potasyum", "5.8", "mmol/L").status == "high"
+    assert interpret_value("Glukoz", "60", "mg/dL").status == "low"
+    assert interpret_value("Sodyum", "130", "mmol/L").status == "low"
+
+
 def test_user_range_overrides():
     # Kendi aralığı 70-110 olan raporda 105 normal; yerleşik aralıkta yüksek
     assert interpret_value("Glukoz", "105", "mg/dL").status == "high"
@@ -168,7 +187,8 @@ def test_unknown_test_and_bad_value():
 def test_qualified_values():
     assert interpret_value("CRP", "<0.5", "mg/L").status == "unknown"  # alt sınır yok: <0.5 kesin normal sayılmaz
     assert interpret_value("Ferritin", "<5", "ng/mL", sex="female").status == "low"
-    assert interpret_value("CRP", ">200", "mg/L").status == "high"
+    assert interpret_value("CRP", ">200", "mg/L").status == "critical"  # >=100 mg/L kritik (tıbbi inceleme)
+    assert interpret_value("CRP", ">20", "mg/L").status == "high"
     assert interpret_value("Glukoz", ">60", "mg/dL").status == "unknown"
 
 

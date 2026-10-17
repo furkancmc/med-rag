@@ -18,12 +18,16 @@ def get_vision_service() -> VisionService:
     if "svc" not in _service:
         with _lock:
             if "svc" not in _service:
-                from medrag.llm import EvrenLLM
+                from medrag.llm import EvrenLLM, parse_extra_params
 
                 s = deps.get_settings()
                 _service["svc"] = VisionService(
                     VisionClient(s.vision_api_url),
-                    EvrenLLM(s.vision_api_url, s.vision_extract_model),
+                    EvrenLLM(
+                        s.vision_api_url,
+                        s.vision_extract_model,
+                        extra_params=parse_extra_params(s.vision_extract_extra_params),
+                    ),
                     [m.strip() for m in s.vision_ocr_models.split(",") if m.strip()],
                     s.vision_chat_model,
                     s.vision_max_bytes,
