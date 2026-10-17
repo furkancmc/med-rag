@@ -3,7 +3,7 @@
    - sayfalar (HTML gezinmeleri): önce ağ, olmazsa önbellek, o da yoksa çevrimdışı sayfası
    - /api/*, /chat, GET dışındaki istekler ve başka kökenler: ASLA önbelleğe alınmaz / yakalanmaz
    Sürüm değişince eski önbellekler silinir. */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = "medrag-static-" + VERSION;
 const PAGE_CACHE = "medrag-pages-" + VERSION;
 const PRECACHE = [
