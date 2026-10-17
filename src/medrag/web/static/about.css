@@ -13,3 +13,20 @@
 .stat { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--sp-3); }
 .stat b { display: block; font-size: var(--fs-xl); color: var(--accent-ink); }
 .about-foot { text-align: center; }
+
+@media (min-width: 1024px) {
+  .about-hero { padding: var(--sp-6); }
+  .about-hero h2 { font-size: var(--fs-xl); }
+  .about-hero p { font-size: var(--fs-lg); max-width: 64ch; line-height: 1.6; }
+  .two-col { gap: var(--sp-5); }
+  .do-list, .dont-list { gap: var(--sp-2); }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-5); }
+  .flow > li { padding: 52px 0 0; }
+  .flow > li::after { left: 48px; right: calc(-1 * var(--sp-5) + 12px); top: 17px; bottom: auto; width: auto; height: 2px; display: block; }
+  .flow > li:last-child::after { display: none; }
+  #sources-box .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #sources-box .list-row { border-top: 0; border-bottom: 1px solid var(--line); }
+  #sources-box .list-row:nth-child(odd) { border-right: 1px solid var(--line); }
+  #sources-box .list-row:nth-last-child(-n+2):nth-child(odd), #sources-box .list-row:last-child { border-bottom: 0; }
+  .layers { gap: var(--sp-3); }
+}

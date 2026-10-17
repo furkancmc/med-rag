@@ -447,6 +447,38 @@ parçasında bağlantının kopması, konu dışı soruya tavsiye verilmesi, aci
   </tr>
 </table>
 
+### Masaüstü arayüzü (>= 1024 px)
+
+Aynı HTML, yalnızca CSS ile geniş ekrana uyar (`base.css`, `chat.css`, `about.css` içindeki `@media (min-width: 1024px)`
+blokları). Mobil düzen (alt gezinme, tek sütun) değişmedi.
+
+- **Kabuk:** alt gezinme çubuğu sol kenar çubuğuna dönüşür (marka, Sohbet/Belirti/Tahlil/Hakkında, tema düğmesi,
+  kısa uyarı ve 112 bağlantısı); sayfa başlığı içerikte büyük başlık olur. Gezinmeyi `common.js` `renderNav` çizer.
+- **Sohbet:** 800 px okunaklı sütun, karşılamada örnek soru kartları ve araç kartları, kaynaklar yan yana iki kart
+  olarak açık gelir, yazma kutusu altta ortalanmış ve sabit.
+- **Belirti / Tahlil:** belirti sonucu kart ızgarası; tahlilde giriş solda, sonuç sağda (yapışkan). Aciliyet
+  seviyesi rozetle (metin + nokta) ve kartın sol renk şeridiyle gösterilir; renk tek başına bilgi taşımaz.
+- **Hakkında:** adımlar yatay akış, kaynak tablosu iki sütun, güvenlik ve gizlilik yan yana.
+- **Tasarım dili:** CSS değişkenleriyle açık/koyu tema, harici font/kütüphane yok, satır içi SVG ikonlar, görünür
+  klavye odağı, `prefers-reduced-motion` desteği.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ui-pc/sohbet-karsilama-pc-light.png" width="420"><br><sub>Sohbet, karşılama (açık)</sub></td>
+    <td align="center"><img src="docs/screens/ui-pc/sohbet-cevap-pc-dark.png" width="420"><br><sub>Kaynaklı cevap (koyu)</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ui-pc/belirti-3-sonuc-pc-light.png" width="420"><br><sub>Belirti sonucu (örnek yanıt)</sub></td>
+    <td align="center"><img src="docs/screens/ui-pc/tahlil-2-sonuc-pc-dark.png" width="420"><br><sub>Tahlil: giriş / sonuç (koyu)</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="docs/screens/ui-pc/hakkinda-pc-light.png" width="420"><br><sub>Hakkında</sub></td>
+  </tr>
+</table>
+
+Tüm görüntüler `scripts/dev_server.py` sahte servisiyle alındı (1440x900, 1024x768 ve 390x844, açık/koyu):
+`docs/screens/ui-pc/`. Belirti sonucu için API yanıtı sahtedir.
+
 ### Faz 1 görüntüleri (gerçek API)
 
 <details>
