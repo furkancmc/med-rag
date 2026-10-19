@@ -21,7 +21,7 @@ for f in sorted(Path("eval/kaynaklar/acil").glob("set*.jsonl")):
     hit = tot = fa = neg = 0
     for line in f.read_text(encoding="utf-8").splitlines():
         r = json.loads(line)
-        msgs = json.loads(re.search(r"\[.*\]", r["content"], re.S).group(0))
+        msgs = json.loads(re.search(r"\[.*\]", r["content"], re.DOTALL).group(0))
         if r["id"].endswith("normal"):
             neg += len(msgs)
             fa += sum(check_emergency(m).emergency for m in msgs)
