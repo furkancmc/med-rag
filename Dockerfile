@@ -7,7 +7,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 # Yerel BGE-M3 için CPU torch. GPU gerekiyorsa CUDA'lı torch tabanlı bir imaj kullanın (README bölüm 7).
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu \
-    && pip install ".[local]" && useradd --create-home --uid 10001 medrag
+    && pip install ".[local,vision]" && useradd --create-home --uid 10001 medrag
 
 # Ham veri imaja girer; chunk dosyası ilk açılışta üretilir. Embedding indeksi imajda YOK:
 # `python -m medrag.index embed --backend local` ile üretilip /app/data/index_bge_m3 olarak bağlanır (volume).
