@@ -76,7 +76,7 @@ gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servisler
 | İkinci katman acil sınıflandırıcı (LLM) | Doğrulandı (BM25 ile) | Gerçek vektör aramayla uçtan uca koşturulmadı |
 | Belirti değerlendirme | Doğrulandı | 19 senaryo (deepseek-v4.1-flash). Çocuk ateşi kuralı sonradan sıkılaştırıldı, tam set yeniden koşulmadı |
 | Tahlil yorumu (kural tabanlı sınıflandırma) | Testle + tarayıcıda | 34 test için referans tablosu |
-| Tahlil fotoğrafı okuma (OCR) | Kısmen | Yalnızca temiz sentetik görselle denendi; gerçek telefon fotoğrafı ölçülmedi |
+| Tahlil fotoğrafı okuma (OCR) | Kısmen | Bozulmuş sentetik görsellerle ölçüldü (hafif/orta %98-100, ağır %41-58); gerçek telefon fotoğrafı ölçülmedi |
 | Arayüz (4 sayfa, PWA, tema) | Doğrulandı | Microsoft Edge, 390 px, açık/koyu: JS hatası yok, yatay kaydırma yok |
 | Docker imajı | Doğrulandı | Derlendi, konteyner `healthy`, root olmayan kullanıcı, tüm sayfalar 200 |
 | Sunucu sertleştirme (hız sınırı, erişim kodu, CSP) | Testle | Çok işçili çalışmada sayaçlar işçi başınadır |
@@ -502,11 +502,12 @@ Sonuç özeti (48 rapor, 45 kutu; ayrıntı ve model karşılaştırması `eval/
 
 | Görsel | Hafif / orta bozulma | Ağır bozulma |
 |---|---|---|
-| Tahlil değerleri (4 model) | %98-100 doğru | %41-54 (**yeniden ölçülecek**: ölçüm sırasında API hız sınırı hataları sonucu bozmuş olabilir) |
+| Tahlil değerleri (4 model) | %98-100 doğru | %41-58 doğru; çok sayıda satır kaçıyor ve `qwen3-vl-30b` 31 satır uyduruyor (tekrar ölçümle doğrulandı) |
 | İlaç kutusu, `gemma-4-31b` | marka %100, etken madde %100, güç %80-100 | marka %93, etken madde %80, güç %87 |
 
-Okuma: temiz ve hafif/orta bozulmuş görsellerde değerler neredeyse hatasız okunuyor; ağır bozulmada doğruluk düşüyor,
-bu yüzden arayüz okunan her satırı kullanıcı onayına sunuyor ve "net bir fotoğraf deneyin" uyarısı veriyor.
+Okuma: temiz ve hafif/orta bozulmuş görsellerde değerler neredeyse hatasız okunuyor; ağır bozulmada (4 bozulma birlikte: eğim, gölge, parlama, düşük ışık vb.)
+doğruluk yarıya düşüyor ve bazı modeller olmayan satır uyduruyor. Bu yüzden arayüz okunan her satırı kullanıcı onayına sunuyor ve "net bir fotoğraf deneyin" uyarısı veriyor.
+İyileştirme fikirleri (yapılmadı): perspektif düzeltme ve kontrast ön işleme, düşük güvenli görselde reddetme.
 Bu ölçüm sentetik görsellerledir; gerçek telefon fotoğrafı doğruluğu bunların altında olabilir.
 
 ---
@@ -856,8 +857,8 @@ tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Dep
 - **Güvenlik koşuları BM25 aramayla yapıldı**; gerçek vektör aramayla uçtan uca doğrulama yapılmadı.
 - **Doğrulama hakemi LLM'dir**, sapabilir; yük altında 20 sn bütçe aşılabilir. İşaretleme, cümleyi cevap metninde
   tam eşleşmeyle bulur; bulunamayan cümleler yalnızca nottaki listede görünür.
-- **OCR** yalnızca temiz sentetik görsellerle denendi; eğik, gürültülü ve gerçek telefon fotoğrafı doğruluğu
-  ölçülmedi. Fotoğraftan okunan satırlar her zaman kullanıcı onayına sunulur.
+- **OCR** sentetik bozulmuş görsellerle ölçüldü: hafif/orta bozulmada %98-100, ağır bozulmada %41-58 değer doğruluğu. Gerçek telefon
+  fotoğrafı ölçülmedi. Fotoğraftan okunan satırlar her zaman kullanıcı onayına sunulur.
 - **Ses tanıma doğrulanmadı** (gerçek ses denenmedi); mikrofon, sesli okuma ve `sw.js` çevrimdışı akışı tarayıcıda
   uçtan uca denenmedi.
 - **Gecikme:** Düşünen model yüzünden belirti ve tahlil açıklaması dakikaya yaklaşabilir.

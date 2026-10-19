@@ -37,3 +37,43 @@
 | gemma-4-31b | tümü | 45 | 98% | 93% | 89% | 3.0 |
 
 İstek hatası olan görsel sayısı (toplam): 3. Ayrıntı: `scratch/ocr/results.json` (repoya alınmaz).
+
+## Ağır düzey: yeniden ölçüm (API hız sınırı hataları olmadan, 2 işçi)
+
+İlk koşuda ağır düzeyin son görselleri API 429 hatalarından etkilenmiş olabilirdi; bu yüzden yalnızca ağır düzey tekrar koşuldu. Sonuç ilk koşuyla aynı seviyede kaldı: ağır bozulmada düşüş gerçektir (hız sınırı kaynaklı değil). Satırlar `hafif`/`orta` için 0 görsel gösterir, çünkü bu koşuda yalnız ağır düzey vardı.
+
+## Tahlil raporu
+
+| Model | Düzey | Görsel | Değer doğru | Birim doğru | Kaçan satır | Uydurma satır | Ort. süre (sn) |
+|---|---|---|---|---|---|---|---|
+| ocr:deepseek-ocr-2 | hafif | 0 | - | - | 0 | 0 | 0.0 |
+| ocr:deepseek-ocr-2 | orta | 0 | - | - | 0 | 0 | 0.0 |
+| ocr:deepseek-ocr-2 | ağır | 16 | 41% | 39% | 94 | 4 | 21.8 |
+| ocr:deepseek-ocr-2 | tümü | 16 | 41% | 39% | 94 | 4 | 21.8 |
+| ocr:dots-ocr | hafif | 0 | - | - | 0 | 0 | 0.0 |
+| ocr:dots-ocr | orta | 0 | - | - | 0 | 0 | 0.0 |
+| ocr:dots-ocr | ağır | 16 | 48% | 46% | 77 | 11 | 15.0 |
+| ocr:dots-ocr | tümü | 16 | 48% | 46% | 77 | 11 | 15.0 |
+| chat:qwen3-vl-30b | hafif | 0 | - | - | 0 | 0 | 0.0 |
+| chat:qwen3-vl-30b | orta | 0 | - | - | 0 | 0 | 0.0 |
+| chat:qwen3-vl-30b | ağır | 16 | 58% | 56% | 54 | 31 | 15.1 |
+| chat:qwen3-vl-30b | tümü | 16 | 58% | 56% | 54 | 31 | 15.1 |
+| chat:gemma-4-31b | hafif | 0 | - | - | 0 | 0 | 0.0 |
+| chat:gemma-4-31b | orta | 0 | - | - | 0 | 0 | 0.0 |
+| chat:gemma-4-31b | ağır | 16 | 50% | 50% | 79 | 2 | 22.9 |
+| chat:gemma-4-31b | tümü | 16 | 50% | 50% | 79 | 2 | 22.9 |
+
+## İlaç kutusu
+
+| Model | Düzey | Görsel | Marka | Etken madde | Güç | Ort. süre (sn) |
+|---|---|---|---|---|---|---|
+| qwen3-vl-30b | hafif | 0 | - | - | - | 0.0 |
+| qwen3-vl-30b | orta | 0 | - | - | - | 0.0 |
+| qwen3-vl-30b | ağır | 15 | 93% | 73% | 93% | 0.7 |
+| qwen3-vl-30b | tümü | 15 | 93% | 73% | 93% | 0.7 |
+| gemma-4-31b | hafif | 0 | - | - | - | 0.0 |
+| gemma-4-31b | orta | 0 | - | - | - | 0.0 |
+| gemma-4-31b | ağır | 15 | 93% | 80% | 87% | 3.7 |
+| gemma-4-31b | tümü | 15 | 93% | 80% | 87% | 3.7 |
+
+İstek hatası olan görsel sayısı (toplam): 4. Ayrıntı: `scratch/ocr/results_*.json` (repoya alınmaz).
