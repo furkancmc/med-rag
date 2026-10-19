@@ -1,83 +1,26 @@
 # Yol haritası
 
-Açık tıbbi kaynaklar üzerinde RAG ile çalışan Türkçe sağlık bilgi asistanı. Embedding ve cevap üretimi
-Evren API (OpenAI uyumlu; embedding: `qwen3-embedding-8b`, sohbet: `auto`, H200 üzerinde) ile yapılır.
+Açık tıbbi kaynaklar üzerinde RAG ile çalışan Türkçe sağlık bilgi asistanı. Embedding yerel BGE-M3 ile, cevap üretimi
+Evren API (OpenAI uyumlu, sohbet: `deepseek-v4.1-flash`) ile yapılır.
 Cevaplar yalnızca kaynaklara dayanır ve kaynak gösterir.
 
-## Faz 1 — Temel sistem (tamamlandı)
+## Durum
 
-- [x] 1. İskelet: pyproject, ayarlar, CI, README
-- [x] 2. Veri hattı: MedlinePlus + seçili Vikipedi (tr/en) indirme, ayrıştırma, parçalama
-- [x] 3. İndeks: `qwen3-embedding-8b` (1024 boyut), BM25 (düz dosya)
-- [x] 4. Arama: vektör (ölçümle seçildi), BM25 ve hybrid isteğe bağlı; recall@k ölçümü
-- [x] 5. Sohbet servisi: prompt, acil durum kontrolü, Evren LLM, [1] [2] atıfları, doz filtresi
-- [x] 6. FastAPI (SSE akış) ve telefona uygun web sayfası
-- [x] 7. Arama değerlendirmesi (150 soru) ve güvenlik senaryoları (13/13)
-- [x] 8. Dockerfile, README, gerçek API ile ekran görüntüleri
+**Faz 1 (temel sistem) tamamlandı:** iskelet, veri hattı (MedlinePlus, Vikipedi), indeks (BM25 + vektör),
+arama, sohbet servisi (acil kontrol, atıf, doz filtresi), FastAPI + SSE, web arayüzü, değerlendirme, Docker.
 
-## Faz 2 — Gelişmiş özellikler (devam ediyor)
+**Faz 2 tamamlandı** (ayrıntı: `docs/gorevler/A-G.md`, kayıtlar: `docs/gelistirme-kayitlari/`):
 
-Hedef: daha doğru arama, daha geniş ve güncel bilgi tabanı, "doktor gibi" yapılandırılmış değerlendirme,
-çalışma anında doğrulanan cevaplar, yeni sayfalar ve modern arayüz, üretime hazır sunucu.
-İşler paralel ajanlarla yürütülür; her iş akışının dosya sahipliği aşağıda tanımlıdır.
-
-### A. Arama: reranker ve sorgu genişletme
-- [x] Reranker katmanı: vektör aramadan 30-50 aday, yeniden sıralayıp ilk 5. Evren API'de rerank uç noktası
-      varsa onu, yoksa sohbet modeliyle paralel puanlama (H200 için yüksek eşzamanlılık) kullan.
-- [x] Çoklu sorgu: soru + İngilizce çevirisi + 1-2 yeniden yazım ile arama, sonuçları birleştir.
-- [x] `Retriever.search(query, k)` arayüzü korunur (sohbet servisi değişmeden faydalanır).
-- [ ] Değerlendirme: vektör / vektör+rerank / çoklu sorgu+rerank karşılaştırması, gecikme ölçümü. (altyapı hazır; ölçüm 8b masrafı nedeniyle ertelendi)
-- [x] Test setini 150'den 500 soruya çıkar (yüksek eşzamanlılıkla üretim).
-- Kabul: recall@1 ve MRR'de ölçülebilir artış; sonuç `eval/results.md`'de.
-
-### B. Veri: güncel ve kaliteli kaynaklar
-- [x] Europe PMC: 2020 ve sonrası, CC BY lisanslı derleme (review) makalelerinin özetleri (seçili konular).
-- [x] openFDA ilaç prospektüsleri (kamu malı): endikasyon, uyarı, yan etki, etkileşim. Doz bölümleri alınmaz.
-- [x] CDC (kamu malı) hastalık ve korunma sayfaları.
-- [x] Seçili Vikipedi listesini genişlet (≈400 konu; Türkiye'de sık görülen hastalıklar dahil).
-- [x] Her parçada kaynak, lisans, yayın/güncelleme ve çekilme tarihi.
-- [x] Embedding önbelleği: metin özeti (hash) ile sadece yeni/değişen parçalar yeniden hesaplanır.
-- [x] Haftalık otomatik yenileme workflow'u; yüksek ama kaynakların sınırlarına saygılı eşzamanlılık.
-- Kabul: yeni kaynaklar indeksli, lisanslar kartlarda görünür, değerlendirme yeniden çalıştırılmış.
-
-### C. Güvenlik ve doğrulama
-- [x] Çalışma anında cevap doğrulama: akış bitince cevap cümleleri kaynaklarla karşılaştırılır,
-      desteklenmeyenler `verification` olayıyla işaretlenir.
-- [x] Acil durum için ikinci katman: kurallara ek LLM sınıflandırıcı (gecikme eklememek için paralel).
-- [x] Acil modda hastalık adı geçen cümleleri koddan çıkar (prompt kuralı yetmedi).
-- [x] Yazıyla yazılmış dozları yakala ("iki tablet", "yarım tablet", "bir çay kaşığı").
-- [x] Güvenlik setini 13'ten 30+ senaryoya çıkar: kaynağa gömülü talimat (prompt injection), jailbreak,
-      çocuk, gebelik, yeme bozukluğu, yanlış bilgi düzeltme, kendine zarar varyantları.
-- Kabul: tüm senaryolar gerçek API ile geçer; yanlış alarm oranı raporlanır.
-
-### D. Belirti değerlendirme (yeni sayfa)
-- [x] Kullanıcı ana şikâyetini yazar; asistan en fazla 5 hedefli soru sorar (seçenekli).
-- [x] Sonuç: aciliyet seviyesi (112 / bugün hekime / birkaç gün içinde randevu / evde izle), gerekçe,
-      dikkat edilecek kırmızı bayraklar, kaynaklar.
-- [x] Kural tabanlı kırmızı bayraklar LLM kararını her zaman yukarı çeker (asla aşağı çekmez).
-- Kabul: birim testler + gerçek API ile senaryo testleri.
-
-### E. Tahlil yorumu ve görsel okuma (yeni sayfa)
-- [x] Sık tahliller için referans aralıkları tablosu (kaynaklı, birim dönüşümlü, yetişkin).
-- [x] Değerleri düşük/normal/yüksek sınıflandır (kural tabanlı), açıklamayı kaynaklı LLM yazsın.
-- [x] Tahlil sonucu fotoğrafından değer okuma ve ilaç kutusu fotoğrafından ilaç adı okuma (görsel model).
-- [x] Görseller saklanmaz, sadece istek süresince işlenir.
-
-### F. Sunucu ve üretim hazırlığı
-- [x] Hız sınırı (IP başına), istek boyutu sınırı, güvenlik başlıkları (CSP vb.).
-- [x] İsteğe bağlı erişim kodu (barındırırken), geri bildirim (👍/👎) kaydı, metrik uç noktası.
-- [x] Sorgu embedding önbelleği, yapılandırılmış log (kişisel veri yazmadan).
-- [x] Docker: root olmayan kullanıcı, healthcheck; docker-compose; barındırma notları.
-
-### G. Arayüz (modern ve sade)
-- [x] Ortak tasarım sistemi (`web/static/base.css`), ortak yardımcılar (`web/static/common.js`).
-- [x] Sayfalar: Sohbet, Belirti Değerlendirme, Tahlil Yorumu, Hakkında (kaynaklar, nasıl çalışır, uyarılar).
-- [x] Alt gezinme çubuğu (telefon), koyu/açık tema, erişilebilirlik.
-- [x] Sesle soru sorma ve sesli dinleme (tarayıcı), doğrulama işaretleri, geri bildirim butonları, PWA.
-- Kabul: tüm sayfalar 390 px'te yatay kaydırmasız, JS hatasız; gerçek API ile ekran görüntüleri.
-
-### H. Belgeler
-- [x] Her birleştirmeden sonra README ve değişiklik günlüğü güncellenir.
+| Akış | Kapsam |
+|---|---|
+| A Arama | reranker, çoklu sorgu, 500 soruluk set. Açık: rerank/çoklu sorgu ölçümü (masraf nedeniyle ertelendi) |
+| B Veri | Europe PMC, openFDA, CDC, ~400 konulu Vikipedi, lisans/tarih alanları, embedding önbelleği, haftalık yenileme |
+| C Güvenlik | çalışma anı cevap doğrulama, LLM acil sınıflandırıcı, yazıyla doz yakalama, 30+ güvenlik senaryosu |
+| D Belirti | en fazla 5 soruluk değerlendirme, aciliyet seviyesi; kurallar kararı yalnızca yukarı çeker |
+| E Tahlil | referans aralıkları, kural tabanlı sınıflandırma, fotoğraftan okuma (saklanmaz) |
+| F Sunucu | hız/boyut sınırı, güvenlik başlıkları, erişim kodu, geri bildirim, metrik, Docker |
+| G Arayüz | ortak tasarım sistemi, 4 sayfa, alt gezinme, tema, ses, PWA |
+| H Belgeler | README ve değişiklik günlüğü her birleştirmede güncellenir |
 
 ## Paralel çalışma düzeni
 
