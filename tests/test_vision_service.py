@@ -277,7 +277,10 @@ def test_lab_report_retries_with_enhanced_image_when_few_rows():
             return "bulanık" if image == original else MD_TABLE
 
     client = Flaky()
-    res = service(client).lab_report(original)
+    svc = service(client)
+    svc.enhance = True
+    res = svc.lab_report(original)
+    assert [c for c in client.calls if c[1] is False]
     assert ("ocr", True) in client.calls and ("ocr", False) in client.calls
     assert len(res["rows"]) >= 3
     assert any("kalitesi düşük" in w for w in res["warnings"])

@@ -82,10 +82,11 @@ gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servisler
 | Sunucu sertleştirme (hız sınırı, erişim kodu, CSP) | Testle | Çok işçili çalışmada sayaçlar işçi başınadır |
 | Ses tanıma (`qwen3-asr-1.7b`) | **Sentetik sesle doğrulandı** | `/audio/transcriptions` Actions'ta Türkçe sentetik sesi çözdü (bir kelime hatalı); gerçek insan sesiyle denenmedi |
 | Reranker (`bge-reranker-v2-m3`, yerel) | Ölçüldü, **kapalı** | Havuz 10 ve 600 karakterle GPU'da küçük fayda (doc@1 0,744 → 0,770; ~100 ms), CPU'da yavaş (~8 sn); uzun metin ve büyük havuz kaliteyi düşürüyor. Ayrıntı: [Arama](#7-arama-ölçümler-ve-kararlar) |
-| Çoklu sorgu genişletme | Kod hazır, kapalı | Ölçülene kadar kapalı |
+| Çoklu sorgu genişletme | Ölçüldü, varsayılan kapalı | 200 soruda doc@1 0,715 → 0,810, ama medyan +4,4 sn (p95 9 sn); ayrıntı `eval/results_v2_multiquery.md` |
 | Bilgi tabanı (33.573 parça) | Doğrulandı | Tüm kaynaklar yerel BGE-M3 ile indekslendi (RTX 4060'ta ~6 dk); 500 soruda recall@5 0,78, 677 soruluk belge düzeyi sette doc@5 0,91 |
 
-**Ertelenenler:** gerçek vektör aramayla uçtan uca güvenlik/doğrulama koşuları, çoklu sorgu ölçümü. Ayrıntı: [Bilinen sınırlar](#20-bilinen-sınırlar).
+**Yenilenenler (20.10.2026):** güvenlik senaryoları gerçek vektör aramayla yeni kurallarla koşuldu (60/60, yanlış alarm 0/40); belirti senaryoları 19/19 uygun (aşırı triyaj 0, aşağı triyaj 0).
+**Ertelenenler:** hekim incelemesi (`docs/hekim-inceleme-paketi.md`), gerçek telefon fotoğrafı ve gerçek ses denemesi. Ayrıntı: [Bilinen sınırlar](#20-bilinen-sınırlar).
 
 ---
 
@@ -857,7 +858,8 @@ tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Dep
 - **Güvenlik koşuları BM25 aramayla yapıldı**; gerçek vektör aramayla uçtan uca doğrulama yapılmadı.
 - **Doğrulama hakemi LLM'dir**, sapabilir; yük altında 20 sn bütçe aşılabilir. İşaretleme, cümleyi cevap metninde
   tam eşleşmeyle bulur; bulunamayan cümleler yalnızca nottaki listede görünür.
-- **OCR** sentetik bozulmuş görsellerle ölçüldü: hafif/orta bozulmada %98-100, ağır bozulmada %41-58 değer doğruluğu. Gerçek telefon
+- **OCR** sentetik bozulmuş görsellerle ölçüldü: hafif/orta bozulmada %98-100, ağır bozulmada %41-58 değer doğruluğu. Gri tonlama + kontrast + keskinleştirme
+  ön işlemesi (`enhance_image`, `VisionService(enhance=True)`) ağır düzeyde kazanç vermedi (dots 49→49, qwen3-vl 54→52, gemma 52→43; `eval/ocr_on_isleme_results.md`), varsayılan kapalı. Az satır okunursa kalite uyarısı verilir. Gerçek telefon
   fotoğrafı ölçülmedi. Fotoğraftan okunan satırlar her zaman kullanıcı onayına sunulur.
 - **Ses tanıma doğrulanmadı** (gerçek ses denenmedi); mikrofon, sesli okuma ve `sw.js` çevrimdışı akışı tarayıcıda
   uçtan uca denenmedi.

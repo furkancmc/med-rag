@@ -335,12 +335,14 @@ class VisionService:
         ocr_models: list[str],
         chat_model: str,
         max_bytes: int = 8 * 1024 * 1024,
+        enhance: bool = False,
     ):
         self.client = client
         self.extractor = extractor  # .complete(messages, temperature, max_tokens) -> str
         self.ocr_models = ocr_models
         self.chat_model = chat_model
         self.max_bytes = max_bytes
+        self.enhance = enhance  # ön işlemeli ikinci deneme; sentetik ağır bozulmada kazanç ölçülmedi, varsayılan kapalı
 
     def read_text(self, image: bytes, mime: str) -> tuple[str, str]:
         """(metin, kullanılan model). OCR modelleri sırayla, olmazsa görsel sohbet modeli."""
@@ -360,7 +362,7 @@ class VisionService:
         mime = validate_image(image, self.max_bytes)
         final, model, method = self._extract(image, mime)
         enhanced = False
-        if len(final) < MIN_ROWS_BEFORE_RETRY:  # bozuk fotoğraf: ön işlenmiş görselle bir kez daha dene
+        if self.enhance and len(final) < MIN_ROWS_BEFORE_RETRY:  # bozuk fotoğraf: ön işlenmiş görselle bir kez daha dene
             better = enhance_image(image)
             if better is not None:
                 try:
