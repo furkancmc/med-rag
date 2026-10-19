@@ -7,11 +7,15 @@ Her `*_cli.py` modülü `register(subparsers)` ile kendi alt komutlarını ekler
 import argparse
 import importlib
 import pkgutil
+import sys
 
 import medrag.eval as eval_pkg
 
 
 def main() -> None:
+    for stream in (sys.stdout, sys.stderr):  # Windows konsolu (cp1254) ✓ gibi karakterlerde çökmesin
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(prog="python -m medrag.eval")
     sub = parser.add_subparsers(dest="cmd", required=True)
     for info in sorted(pkgutil.iter_modules(eval_pkg.__path__), key=lambda m: m.name):
