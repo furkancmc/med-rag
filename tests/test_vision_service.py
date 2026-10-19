@@ -242,3 +242,42 @@ def test_deterministic_markdown_bold_flags_and_merged_unit():
     rows = parse_rows_deterministic(text)
     assert [(r["value"], r["unit"]) for r in rows] == [("10,9", "g/dL"), ("4,10", "x10^6/μL"), ("19", "U/L")]
     assert rows[0]["ref_low"] == 12.0 and rows[0]["ref_high"] == 15.5
+
+
+def _real_png() -> bytes:
+    from io import BytesIO
+
+    from PIL import Image
+
+    out = BytesIO()
+    Image.new("RGB", (200, 120), (120, 120, 120)).save(out, format="PNG")
+    return out.getvalue()
+
+
+def test_enhance_image_upscales_and_rejects_garbage():
+    pytest.importorskip("PIL")
+    from io import BytesIO
+
+    from PIL import Image
+
+    from medrag.vision import enhance_image
+
+    img = Image.open(BytesIO(enhance_image(_real_png(), min_side=400)))
+    assert img.mode == "L" and min(img.size) >= 400
+    assert enhance_image(b"bu bir gorsel degil") is None
+
+
+def test_lab_report_retries_with_enhanced_image_when_few_rows():
+    pytest.importorskip("PIL")
+    original = _real_png()
+
+    class Flaky(FakeClient):
+        def ocr(self, image, mime, model):
+            self.calls.append(("ocr", image == original))
+            return "bulanık" if image == original else MD_TABLE
+
+    client = Flaky()
+    res = service(client).lab_report(original)
+    assert ("ocr", True) in client.calls and ("ocr", False) in client.calls
+    assert len(res["rows"]) >= 3
+    assert any("kalitesi düşük" in w for w in res["warnings"])

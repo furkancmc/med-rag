@@ -305,6 +305,28 @@ def finalize_rows(rows: list[dict]) -> list[dict]:
     return out
 
 
+MIN_ROWS_BEFORE_RETRY = 3
+
+
+def enhance_image(data: bytes, min_side: int = 1600) -> bytes | None:
+    """Gri tonlama + otomatik kontrast + keskinleştirme; küçük görseli büyütür. Pillow yoksa/açılamazsa None."""
+    try:
+        from io import BytesIO
+
+        from PIL import Image, ImageFilter, ImageOps
+
+        img = ImageOps.exif_transpose(Image.open(BytesIO(data))).convert("L")
+        scale = min_side / min(img.size)
+        if scale > 1:
+            img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+        img = ImageOps.autocontrast(img, cutoff=2).filter(ImageFilter.UnsharpMask(radius=2, percent=150))
+        out = BytesIO()
+        img.save(out, format="PNG")
+        return out.getvalue()
+    except Exception:  # noqa: BLE001 - ön işleme isteğe bağlı iyileştirme; hata asıl akışı bozmasın
+        return None
+
+
 class VisionService:
     def __init__(
         self,
@@ -336,6 +358,28 @@ class VisionService:
 
     def lab_report(self, image: bytes) -> dict:
         mime = validate_image(image, self.max_bytes)
+        final, model, method = self._extract(image, mime)
+        enhanced = False
+        if len(final) < MIN_ROWS_BEFORE_RETRY:  # bozuk fotoğraf: ön işlenmiş görselle bir kez daha dene
+            better = enhance_image(image)
+            if better is not None:
+                try:
+                    alt = self._extract(better, "image/png")
+                except VisionError:
+                    alt = None
+                if alt is not None and len(alt[0]) > len(final):
+                    (final, model, method), enhanced = alt, True
+        warnings = []
+        if not final:
+            warnings.append("Görselde tahlil değeri bulunamadı. Daha net bir fotoğraf deneyin ya da değerleri elle girin.")
+        elif any(not r["known"] for r in final):
+            warnings.append("Bazı satırlar tanınan testlerle eşleşmedi; bunlar yorumlanmaz.")
+        if final and (enhanced or len(final) < MIN_ROWS_BEFORE_RETRY):
+            warnings.append("Fotoğraf kalitesi düşük; okunan değerlerin doğruluğundan emin olamayız. Daha net çekip tekrar deneyin.")
+        warnings.append("Okunan değerleri yorumdan önce kontrol edin; OCR hata yapabilir.")
+        return {"rows": final, "ocr_model": model, "method": method, "warnings": warnings}
+
+    def _extract(self, image: bytes, mime: str) -> tuple[list[dict], str, str]:
         text, model = self.read_text(image, mime)
         rows: list[dict] = []
         method = "llm"
@@ -351,14 +395,7 @@ class VisionService:
         if not rows:
             method = "rules"
             rows = parse_rows_deterministic(text)
-        final = finalize_rows(rows)
-        warnings = []
-        if not final:
-            warnings.append("Görselde tahlil değeri bulunamadı. Daha net bir fotoğraf deneyin ya da değerleri elle girin.")
-        elif any(not r["known"] for r in final):
-            warnings.append("Bazı satırlar tanınan testlerle eşleşmedi; bunlar yorumlanmaz.")
-        warnings.append("Okunan değerleri yorumdan önce kontrol edin; OCR hata yapabilir.")
-        return {"rows": final, "ocr_model": model, "method": method, "warnings": warnings}
+        return finalize_rows(rows), model, method
 
     def medicine(self, image: bytes) -> dict:
         mime = validate_image(image, self.max_bytes)

@@ -17,6 +17,7 @@ dependencies = [
 dev = ["pytest>=8", "ruff>=0.5", "httpx2>=2"]
 # Yerel embedding (BGE-M3). CUDA'lı torch için önce:
 #   pip install torch --index-url https://download.pytorch.org/whl/cu124
+vision = ["Pillow>=10"]  # tahlil fotoğrafı ön işleme (isteğe bağlı; yoksa atlanır)
 local = ["torch>=2.4", "transformers>=4.56"]
 
 [build-system]
