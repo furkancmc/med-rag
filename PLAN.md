@@ -13,7 +13,7 @@ arama, sohbet servisi (acil kontrol, atıf, doz filtresi), FastAPI + SSE, web ar
 
 | Akış | Kapsam |
 |---|---|
-| A Arama | reranker, çoklu sorgu, 500 soruluk set. Açık: rerank/çoklu sorgu ölçümü (masraf nedeniyle ertelendi) |
+| A Arama | reranker (ölçüldü, GPU'da küçük fayda), çoklu sorgu, 500 + 755 soruluk setler. Açık: çoklu sorgu ölçümü |
 | B Veri | Europe PMC, openFDA, CDC, ~400 konulu Vikipedi, lisans/tarih alanları, embedding önbelleği, haftalık yenileme |
 | C Güvenlik | çalışma anı cevap doğrulama, LLM acil sınıflandırıcı, yazıyla doz yakalama, 30+ güvenlik senaryosu |
 | D Belirti | en fazla 5 soruluk değerlendirme, aciliyet seviyesi; kurallar kararı yalnızca yukarı çeker |
@@ -97,22 +97,17 @@ kaynağın kullanım sınırlarına saygılı eşzamanlılık ve 429'da geri çe
 - Testlerde LLM ve embedding sahte servislerle; gerçek API testleri Actions'ta.
 - Anahtarlar asla repoya yazılmaz.
 
-## Devir notu (yeni oturumda devam etmek için) — güncel: 17.10.2026
+## Devir notu (yeni oturumda devam etmek için) — güncel: 20.10.2026
 
-- Çalışma dalı: `ccr-fc8175dc-sqyb1k`. Faz 2 iş akışları **A–G tamamlandı ve bu dala birleştirildi**
-  (420 test geçiyor, ruff temiz). Ajan dalları ve yedek yamalar silindi; ajanların ilerleme notları
-  `docs/gelistirme-kayitlari/` altında. Genel durum ve karar günlüğü: `ILERLEME.md` ve `README.md` (bölüm 1 ve 17).
-- Tüm LLM görevleri `deepseek-v4.1-flash` ile çalışır (`MEDRAG_LLM_MODEL`). **`qwen3-embedding-8b` ve
-  `qwen3-reranker-8b` ile gerçek çağrılar masraf nedeniyle durduruldu**; reranker varsayılan kapalı.
-- **Ertelenen işler (sırayla):**
-  1. Yeni ~19.500 parça için embedding indeksi: önce `Veri çek` ile ham veriyi repoya al, sonra
-     `python -m medrag.index embed --trust-legacy` (ilk geçişte; sonra artımlı).
-  2. Arama ölçümü (`python -m medrag.eval run`); rerank açılacaksa havuzu 10–15, metni ~600 karaktere indir.
-  3. Gerçek vektör aramayla güvenlik ve belirti senaryoları; `eval/safety_results.md` 40 senaryoyla yenilenmeli.
+- Çalışma dalı: `ccr-fc8175dc-sqyb1k`. Faz 1-3 tamamlandı (460 test geçiyor, ruff temiz). Genel durum ve karar günlüğü:
+  `README.md` (bölüm 1 ve 17); ajan ilerleme notları `docs/gelistirme-kayitlari/` altında.
+- Tüm LLM görevleri `deepseek-v4.1-flash` ile çalışır (`MEDRAG_LLM_MODEL`); embedding yerel BGE-M3 (33.573 parça indekslendi).
+  Reranker varsayılan kapalı (GPU'da havuz 10 / 600 karakter faydalı, CPU'da yavaş).
+- **Bekleyen işler (sırayla):**
+  1. Hekim ya da klinik biyokimya uzmanı incelemesi: `labs/reference.py` ve `assess/rules.py`. Web kaynaklı doğrulama (`docs/tibbi-inceleme.md`) bunun yerine geçmez.
+  2. Gerçek vektör aramayla güvenlik ve belirti senaryoları; `eval/safety_results.md` ve `eval/assess_results.md` son kural değişikliklerinden sonra yenilenmedi.
+  3. OCR'ı gerçek telefon fotoğraflarıyla ölçmek; ağır bozulmada doğruluk %41-58 (perspektif düzeltme/ön işleme denenebilir).
   4. Ses tanıma (`qwen3-asr-1.7b`) gerçek sesle denemesi: `Platform` workflow'u.
-  5. Tahlil OCR'ı gerçek telefon fotoğraflarıyla ölçmek.
-- **Tıbbi inceleme bekleyen konular:** tahlil referans aralıkları/kritik eşikler (`labs/reference.py`) ve belirti kuralları
-  bir hekim tarafından gözden geçirilmeli. Sistem raporda yazan referans aralığını önceler; yoksa hekime yönlendirir.
-- Gerçek API testleri yerelde de çalışır (anahtar `phone/.env` içinde, gitignore'da) ya da Actions'ta
-  (`EVREN_API_KEY` Actions secret).
+  5. Çoklu sorgu ölçümü (kod hazır, kapalı); haftalık `data/raw` commit'leri `.git`'i büyütüyor (Git LFS ya da release asset düşünülebilir).
+- Gerçek API testleri yerelde (anahtar `.env`'de, gitignore'da) ya da Actions'ta (`EVREN_API_KEY` secret) çalışır. Evren API aynı anda çok istekte 429 verir.
 - Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir. Anahtarlar asla repoya yazılmaz.

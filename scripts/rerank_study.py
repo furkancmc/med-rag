@@ -20,31 +20,18 @@ from medrag.rerank import format_document
 from medrag.rerank_local import LocalReranker
 from medrag.retrieve import load_retriever
 
-D = Path("scratch/agents/queries_v2")
 KS = (1, 3, 5)
 POOLS = (8, 10, 15, 20, 40)
 CHARS = (600, 1000, 1500)
 
 
 def load_labels() -> list[dict]:
-    judged: dict[str, list[int]] = {}
-    for line in (D / "judge.out.jsonl").read_text(encoding="utf-8").splitlines():
-        r = json.loads(line)
-        if r["ok"]:
-            try:
-                txt = r["content"][r["content"].index("{") : r["content"].rindex("}") + 1]
-                judged[r["id"]] = [int(i) for i in json.loads(txt)["relevant"]]
-            except (ValueError, KeyError, TypeError):
-                pass
+    """Etiketler repoda: eval/queries_v2.jsonl (hakem çıktısı)."""
     out = []
-    for line in (D / "queries_raw.jsonl").read_text(encoding="utf-8").splitlines():
+    for line in Path("eval/queries_v2.jsonl").read_text(encoding="utf-8").splitlines():
         q = json.loads(line)
-        rel = judged.get(q["qid"])
-        if rel is None:
-            continue
-        cands = q["cands"]
-        q["rel_chunks"] = {cands[i]["id"] for i in rel if 0 <= i < len(cands)}
-        q["rel_docs"] = {cands[i]["doc_id"] for i in rel if 0 <= i < len(cands)}
+        q["rel_chunks"] = set(q["relevant_chunks"])
+        q["rel_docs"] = set(q["relevant_docs"])
         out.append(q)
     return out
 
