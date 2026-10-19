@@ -81,12 +81,11 @@ gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servisler
 | Docker imajı | Doğrulandı | Derlendi, konteyner `healthy`, root olmayan kullanıcı, tüm sayfalar 200 |
 | Sunucu sertleştirme (hız sınırı, erişim kodu, CSP) | Testle | Çok işçili çalışmada sayaçlar işçi başınadır |
 | Ses tanıma (`qwen3-asr-1.7b`) | **Sentetik sesle doğrulandı** | `/audio/transcriptions` Actions'ta Türkçe sentetik sesi çözdü (bir kelime hatalı); gerçek insan sesiyle denenmedi |
-| Reranker (`bge-reranker-v2-m3`, yerel) | Kod hazır, **kapalı** | 500 soruda genel kaliteyi düşürdü (Türkçe kaynakta iyileştirdi); ayrıntı: [Arama](#7-arama-ölçümler-ve-kararlar) |
+| Reranker (`bge-reranker-v2-m3`, yerel) | Ölçüldü, **kapalı** | Havuz 10 ve 600 karakterle GPU'da küçük fayda (doc@1 0,744 → 0,770; ~100 ms), CPU'da yavaş (~8 sn); uzun metin ve büyük havuz kaliteyi düşürüyor. Ayrıntı: [Arama](#7-arama-ölçümler-ve-kararlar) |
 | Çoklu sorgu genişletme | Kod hazır, kapalı | Ölçülene kadar kapalı |
-| Yeni veri (~32.7 bin parça) | **İndekse girmedi** | Çekildi ve parçalandı ama embedding'i hesaplanmadı (masraf) |
+| Bilgi tabanı (33.573 parça) | Doğrulandı | Tüm kaynaklar yerel BGE-M3 ile indekslendi (RTX 4060'ta ~6 dk); 500 soruda recall@5 0,78, 677 soruluk belge düzeyi sette doc@5 0,91 |
 
-**Bilerek ertelenenler (masraf):** yeni verilerin embedding'i (indeks yeniden kurulumu), reranker ve arama
-ölçümü, gerçek vektör aramayla uçtan uca testler. Ayrıntı: [Maliyet notları](#19-maliyet-notları).
+**Ertelenenler:** gerçek vektör aramayla uçtan uca güvenlik/doğrulama koşuları, çoklu sorgu ölçümü. Ayrıntı: [Bilinen sınırlar](#20-bilinen-sınırlar).
 
 ---
 
@@ -165,7 +164,7 @@ Katmanlar arası sözleşmeler (`PLAN.md`): `Retriever.search(query, k)` arayüz
 | Vektör arama | `numpy` ile kosinüs benzerliği (düz dosya) | Bin düzeyindeki parça sayısı için vektör veritabanı gereksiz; dosya repoda durur, kurulum sıfır |
 | HTTP istemcisi | Standart kütüphane `urllib` | Çalışma zamanında ek bağımlılık yok; çok parçalı (multipart) gövdeyi kendimiz kuruyoruz |
 | Ayarlar | `pydantic-settings` (`MEDRAG_` önekli ortam değişkenleri) | Tek yerde, tür denetimli, `.env` destekli |
-| Test / kalite | `pytest`, `ruff` (BLE/PLW gibi ek kurallar açık) | 420 test, LLM ve embedding sahte servislerle |
+| Test / kalite | `pytest`, `ruff` (BLE/PLW gibi ek kurallar açık) | 460 test, LLM ve embedding sahte servislerle |
 | Konteyner | Docker (`python:3.12-slim`), docker-compose | Tek komutla çalışır; root olmayan kullanıcı, healthcheck |
 | Otomasyon | GitHub Actions | API'ye erişen ölçümler ve veri yenileme orada çalışır |
 | Tarayıcı QA | Playwright + Microsoft Edge | Gerçek tarayıcıda 390 px denemesi, ekran görüntüsü |
@@ -224,9 +223,8 @@ Türkçe/İngilizce başlık çiftlerinden oluşan bir liste var (Türkçe sayfa
 (bot koruması). Bunu aşmaya çalışmadık. Kaynak *isteğe bağlı* işaretlendi: başarısız olunca `fetch` çıkış kodunu
 bozmaz, özette "ATLA" olarak raporlanır. GitHub Actions üzerinden denenebilir.
 
-**Önemli:** Tam çekimden sonra **32.753 parça** (41 MB) çıkıyor. Ancak şu an **indekse yalnızca eski 13.236 parça
-girmiş durumda**; yeni verilerin embedding'i masraf nedeniyle hesaplanmadı ve yeni ham veri repoya alınmadı
-(`fetch-data` workflow'u ile alınır). Yani bugün çalışan asistan eski ve daha küçük bilgi tabanını kullanır.
+**Önemli:** Tam çekimden sonra **33.573 parça** çıkıyor ve hepsi yerel BGE-M3 ile indekslendi (`data/index_bge_m3`).
+Eski Qwen3 indeksi (13.236 parça) kaldırıldı. Ham veri `data/raw` altında repoda durur ve `fetch-data` workflow'u ile yenilenir.
 
 ---
 
@@ -307,14 +305,44 @@ bağımlılık yoktur. Vektörler 1024 boyutlu, L2-normalize ve int8 saklanır (
 - Türkçe kaynaklı sorularda vektör aramanın recall@5 değeri 0,97'dir.
 - Hybrid (BM25 + vektör) daha önceki denemelerde vektörden daha kötü çıktı; kodda dursa da kullanılmıyor.
 
-### Reranker: ölçüldü, varsayılan kapalı
+### İkinci ölçüm: gerçek kullanıcı üslubu ve belge düzeyinde etiket (`queries_v2`)
 
-`BAAI/bge-reranker-v2-m3` (yerel) vektör aramadan 20-40 aday alıp yeniden sıralar. Genel kaliteyi **düşürdü**
-(recall@1 0,534'ten 0,456'ya). Türkçe kaynaklarda belirgin iyileştirdi (recall@1 0,82'den 0,96'ya), İngilizce
-kaynaklarda kötüleştirdi. Şablon farkı (`qwen3` / `none`) sonucu değiştirmedi. Olası nedenler: Türkçe soru - İngilizce
-belge eşleştirmede reranker'ın zayıflığı ve metriğin katılığı (aynı belgenin başka ama eşit ilgili parçası da hata
-sayılır). Açmak için: `MEDRAG_RERANK_ENABLED=true`, `MEDRAG_RERANK_BACKEND=local`.
-Ölçüm dosyaları: `eval/results_bge_m3.md`, `eval/results_bge_m3_rerank.md`.
+İlk ölçümün iki zayıflığı vardı: sorular tek bir parçadan üretildiği için aynı belgenin eşit ilgili başka parçası hata
+sayılıyordu ve üslup "yazılı soru"ya yakındı. Bu yüzden yeni bir set kuruldu (`eval/queries_v2.jsonl`, 755 satır):
+
+- 695 soru, 6 kaynak/dil grubundan dengeli örneklem; dört üslupta (günlük kısa, belirti anlatan, yazım hatalı,
+  yakınını soran) `deepseek-v4.1-flash` ile üretildi; 60 soru kapsam dışıdır (cevabı bilgi tabanında olmamalı).
+- Etiket: her soru için vektör ve BM25'ten aday parçalar getirildi, `deepseek-v4.1-flash` hakemi "soruyu doğrudan
+  cevaplayan" parçaları işaretledi. Kaynak parça %82 oranında ilgili çıktı; hakem çoğu soruda ortalama 2 belge işaretledi.
+  Metrik belge düzeyindedir (`doc@k`: ilk k belgede ilgili bir belge var). Kapsam dışı sorularda hakem 60 sorunun 57'sinde
+  hiçbir parçayı ilgili bulmadı.
+- Hakem LLM olduğu için etiketler kusursuz değildir; bu set de gerçek kullanıcı sorularının yerini tutmaz.
+
+### Reranker: ölçüldü, GPU'da küçük havuzla faydalı, varsayılan kapalı
+
+`BAAI/bge-reranker-v2-m3` (yerel), vektör aramadan aldığı adayları yeniden sıralar. İlk ölçümde (500 soru, havuz 20-40,
+1500 karakter) genel kaliteyi düşürdü. `queries_v2` ile havuz boyutu ve rerank'e giden metin uzunluğu ayrı ayrı denendi
+(677 soru, `eval/results_v2_rerank.md`):
+
+| yöntem | doc@1 | doc@5 | MRR | nDCG@5 | chunk@1 |
+|---|---|---|---|---|---|
+| vektör | 0,744 | 0,907 | 0,817 | 0,783 | 0,662 |
+| **rerank havuz 10, 600 karakter (varsayılan ayar)** | **0,770** | **0,910** | **0,833** | **0,804** | **0,712** |
+| rerank havuz 10, 1000 karakter | 0,740 | 0,905 | 0,814 | 0,788 | 0,679 |
+| rerank havuz 40, 1500 karakter (eski ayar) | 0,709 | 0,903 | 0,793 | 0,738 | 0,641 |
+
+Bulgular:
+- **Eski kötü sonucun nedeni ayardı:** rerank'e giden metin uzadıkça (600 → 1000 → 1500 karakter) ve havuz büyüdükçe
+  (8 → 40) kalite düşüyor. Kısa metin ve küçük havuzla reranker vektör aramanın üstüne çıkıyor
+  (doc@1 +2,6 puan, MRR +1,6 puan, chunk@1 +5 puan). Kazanç küçüktür; ilk 5 belgede ilgili belge bulma oranı (doc@5) neredeyse aynı.
+- **Kaynağa göre değişiyor:** Türkçe Vikipedi ve CDC'de fayda görülüyor (doc@1 0,87 → 0,92 ve 0,77 → 0,82), MedlinePlus ve İngilizce
+  Vikipedi'de zarar ya da fark yok (doc@1 0,64 → 0,59 ve 0,72 → 0,67; havuz 15, 1000 karakter ayarında).
+- **Maliyet gecikmedir, para değil** (model yerel). Havuz 8-10 ile GPU'da (RTX 4060) ~90-110 ms; havuz 40 ile ~430 ms.
+  **CPU'da** havuz 8'de ~7,8 sn, havuz 40'ta ~40 sn; yani CPU üzerinde çalışan Docker imajında kullanılamaz.
+- **Karar:** varsayılanlar `rerank_pool=10`, `rerank_doc_chars=600` yapıldı (eski: 40 ve 1500; 4 kat daha az çalışma).
+  `rerank_enabled` **kapalı kalır**; yalnızca GPU'lu kurulumda `MEDRAG_RERANK_ENABLED=true` ve `MEDRAG_RERANK_BACKEND=local`
+  ile açılması önerilir. Sohbete giren sonuç sayısı (`top_k`) 5 olarak kaldı.
+Ölçüm dosyaları: `eval/results_bge_m3.md`, `eval/results_bge_m3_rerank.md` (ilk ölçüm), `eval/results_v2_rerank.md` (ikinci).
 
 ### Çoklu sorgu (kodlandı, varsayılan kapalı)
 
@@ -674,7 +702,7 @@ Ayarlar `MEDRAG_` önekli ortam değişkenleri ya da `.env` ile verilir (`.env.e
 | `embed_backend`, `local_embed_model`, `local_embed_batch`, `local_index_dir` | `api`, `BAAI/bge-m3`, `32`, `data/index_bge_m3` | Yerel embedding ([bölüm 7](#yerel-embedding-bge-m3)); `rerank_backend` (`api`\|`local`) yerel reranker |
 | `llm_model` | `deepseek-v4.1-flash` | Sohbet modeli |
 | `answer_max_tokens`, `llm_extra_params` | `4096`, boş | Düşünen model token harcar; ek parametre JSON'u |
-| `rerank_enabled` | **`false`** | Reranker (masraf nedeniyle kapalı); `rerank_pool` 40, `rerank_backend` `local` (`bge-reranker-v2-m3`) |
+| `rerank_enabled` | **`false`** | Reranker (yalnız GPU'da önerilir); `rerank_pool` 10, `rerank_doc_chars` 600, `rerank_backend` `local` (`bge-reranker-v2-m3`) |
 | `multiquery_enabled`, `multiquery_model` | `false`, `auto` | Çoklu sorgu |
 | `verify_enabled`, `verify_model`, `verify_budget_seconds` | `true`, `deepseek-v4.1-flash`, `20` | Cevap doğrulama |
 | `classifier_enabled`, `classifier_model`, `classifier_timeout_seconds` | `true`, `deepseek-v4.1-flash`, `8` | İkinci katman acil sınıflandırıcı |
@@ -746,7 +774,7 @@ değerlendirme → Docker/README. **Faz 2** yedi iş akışına bölündü (`PLA
 | İş akışı | Kapsam | Sonuç |
 |---|---|---|
 | A Arama | reranker, çoklu sorgu, sorgu önbelleği, ölçüm araçları | Kod hazır; reranker kapalı |
-| B Veri | Europe PMC, openFDA, NIH ODS, ~550 konu, artımlı int8 depo | 32.753 parça çekildi; indekse girmedi |
+| B Veri | Europe PMC, openFDA, NIH ODS, ~550 konu, artımlı int8 depo | 33.573 parça, yerel BGE-M3 ile indekslendi |
 | C Güvenlik | doğrulama, LLM sınıflandırıcı, yazıyla doz, 40 senaryo | 40/40 (BM25 ile) |
 | D Belirti | `/assess` sayfası, kural motoru | 18/19 senaryo |
 | E Tahlil | `/labs`, 34 test, OCR, ilaç kutusu | Kural tabanlı sınıflandırma tamam |
@@ -762,12 +790,12 @@ yedeği tuttu. Sonuçlar tek tek ana dala birleştirildi ve her birleştirmeden 
 
 | Karar | Gerekçe |
 |---|---|
-| Vektör arama varsayılan; BM25 ve hybrid kodda ama kapalı | Ölçüm: recall@5 0,85 vs 0,46 (BM25) ve 0,81 (hybrid) |
+| Vektör arama varsayılan; BM25 ve hybrid kodda ama kapalı | Ölçüm (BGE-M3, 500 soru): recall@5 0,78 vs 0,22 (BM25); hybrid daha önceki denemede vektörden kötüydü |
 | Embedding'i 1024 boyuta kesmek | Depolama 4'te 1, kalite kaybı küçük |
 | Düz dosya + numpy, vektör veritabanı yok | ~13–33 bin parça için fazlası gereksiz; repoda durur, kurulum sıfır |
 | Tüm LLM görevleri için `deepseek-v4.1-flash` | Proje sahibinin seçimi; yan görevlerde düşünme kapatıldı |
-| Reranker ve çoklu sorgu varsayılan kapalı | Ölçülmeden açılmaz; reranker masraflı (soru başına ~40 doküman) |
-| 8b embedding ve reranker ile gerçek çağrıları durdurmak | Masraf; tüm iş akışlarına yasak olarak bildirildi, gerçek doğrulama ertelendi |
+| Reranker ve çoklu sorgu varsayılan kapalı | Ölçüldü: yalnız GPU'da, havuz 10 ve 600 karakterle faydalı; CPU'da çok yavaş |
+| Ücretli 8b embedding/reranker yerine yerel BGE-M3 | Masraf ve hız sınırı; yerel model API'ye bağımlılığı kaldırdı (bkz. Arama) |
 | Sınıflandırma kural tabanlı, LLM yalnızca açıklar (tahlil) | LLM'in sayı uydurma riski; kural tabanlı sonuç denetlenebilir |
 | Kural seviyesi LLM tarafından aşağı çekilemez (belirti) | Güvenli taraf; LLM hatasında "bugün hekim" |
 | Rapor aralığı varsa o esas, yoksa hekime yönlendir (tahlil) | Aralıklar laboratuvara göre değişir; yerleşik aralık tek başına yetmez |
@@ -783,7 +811,7 @@ yedeği tuttu. Sonuçlar tek tek ana dala birleştirildi ve her birleştirmeden 
 
 ```bash
 pip install -e ".[dev]"
-pytest          # 420 test geçti, 1 atlandı; API'ye dokunmaz, LLM ve embedding sahte servislerle
+pytest          # 460 test geçti, 1 atlandı; API'ye dokunmaz, LLM ve embedding sahte servislerle
 ruff check .    # temiz
 ```
 
@@ -806,20 +834,18 @@ tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Dep
 
 - **Embedding indeksi bir kez kurulur** ve artımlıdır (hash önbelleği). Bekleyen tek seferlik büyük iş: yeni
   ~19.500 parçanın embedding'i. Her arama sorusu yalnızca 1 kısa embedding çağrısı yapar (~20 token, önbellekli).
-- **Reranker pahalıdır**, çünkü indekste durmaz ve her soruda 40 dokümanı yeniden okur (doküman başına ~450 token →
-  soru başına tahminen ~18 bin token). Tam ölçüm (150 soru × birkaç yöntem) on milyon token mertebesine çıkar ve
-  hız sınırına (429) takılır. Bunlar koddaki ayarlardan yapılmış **tahminlerdir, ölçülmüş değildir**.
+- **Reranker para değil gecikme maliyetidir** (model yerel). Ölçüldü: havuz 10'da GPU'da ~100 ms, CPU'da ~8-10 sn;
+  havuz 40'ta GPU'da ~430 ms, CPU'da ~40 sn. Bu yüzden varsayılan kapalı, GPU'lu kurulumda açılır (bkz. Arama).
 - **Düşünen model (deepseek) yavaştır:** küçük bir istek bile düşünme bütçesini tüketebilir; belirti senaryosu
   başına ~130 sn ölçüldü. Yan görevlerde düşünme kapatılır; ana cevaplarda `answer_max_tokens` cömert tutulur.
-- **Geri dönüldüğünde masrafı düşürmek için:** rerank havuzunu 10–15'e ve doküman metnini ~600 karaktere indir,
-  ölçümü 40–50 soru ve 2 yöntemle yap, indeksi yeni verilerle tek seferde kur.
+- **Hız sınırı:** Evren API aynı anda çok istekte 429 verir (özellikle `glm-5.3`); toplu işler düşük eşzamanlılıkla ve başarısız satırları yeniden deneyen
+  `scripts/agents/run_task.py` ile çalıştırıldı.
 
 ---
 
 ## 20. Bilinen sınırlar
 
-- **Bilgi tabanı:** Çalışan indeks ~13 bin parça (~1.200 belge). Yeni 32,7 bin parça henüz indekste değil.
-  Kapsam dışı konuda "bilgi bulamadım" demesi beklenir.
+- **Bilgi tabanı:** 33.573 parça indekste (kaynak başına dağılım §5). Kapsam dışı konuda "bilgi bulamadım" demesi beklenir.
 - **Tıbbi inceleme:** Tahlil referans aralıkları ve kritik eşikler, belirti kuralları bir hekim tarafından
   gözden geçirilmedi. Aralıklar laboratuvara göre değişir; sistem raporun kendi aralığını önceler.
 - **Acil durum tespiti** kurallara ve bir LLM'e dayanır; her ifadeyi yakalamaz. Bilgi amaçlı sorularda ("intihar nedir")
@@ -909,7 +935,7 @@ Kaynak, bağlantı ve lisans her parçada saklanır ve kaynak kartlarında göst
 
 ### Faz 2
 - **Arama (A):** reranker, çoklu sorgu, sorgu embedding önbelleği, yöntem karşılaştırma ve gecikme ölçümü. Reranker
-  masraf nedeniyle varsayılan kapalı.
+  ölçüldü (havuz 10, 600 karakter varsayılan ayar), GPU yoksa kapalı kalır.
 - **Veri (B):** Europe PMC, openFDA, NIH ODS (isteğe bağlı), ~550 konuluk Vikipedi listesi, parça meta verisi,
   kalite süzgeçleri, artımlı int8 embedding deposu, haftalık yenileme workflow'u.
 - **Güvenlik (C):** çalışma anı doğrulama, LLM sınıflandırıcı, acil modda hastalık adı süzgeci, yazıyla doz yakalama,
@@ -926,6 +952,6 @@ Kaynak, bağlantı ve lisans her parçada saklanır ve kaynak kartlarında göst
 - Doz içeren cümle tek bir açıklama cümlesiyle değiştiriliyor; acil cevapta hastalık adı verilmemesi kuralı.
 - Gerçek API ile ekran görüntüleri, güvenlik senaryoları 13/13.
 - Vektör arama varsayılan oldu (recall@5 0,85); hybrid ve BM25 isteğe bağlı.
-- Qwen3 embedding indeksi (13.236 parça), seçili Vikipedi listesi, MedlinePlus.
+- Qwen3 embedding indeksi (13.236 parça; sonradan yerel BGE-M3 ve 33.573 parça ile değişti), seçili Vikipedi listesi, MedlinePlus.
 
 Ayrıntılı yol haritası ve sözleşmeler: [`PLAN.md`](PLAN.md). Geliştirme kayıtları: `docs/gelistirme-kayitlari/`.
