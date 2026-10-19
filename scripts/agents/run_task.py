@@ -26,7 +26,7 @@ def run(task: dict, out: Path, llm: EvrenLLM) -> tuple[int, int]:
         done = {r["id"] for r in rows if r["ok"]}  # başarısızlar yeniden denenir (en son satır geçerli)
     todo = [it for it in task["items"] if it["id"] not in done]
     system = task.get("system", "")
-    client = llm.with_model(task["model"], extra_params=task.get("extra"))
+    client = llm.with_model(task["model"], extra_params=task.get("extra"), timeout=task.get("timeout", 180.0))
 
     def one(item: dict) -> dict:
         messages = ([{"role": "system", "content": system}] if system else []) + [
