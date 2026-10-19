@@ -15,7 +15,7 @@ RULES: list[tuple[str, str]] = [
         r"|cok (fazla )?kan (kayb|gid)|kan\w* .{0,30}(durmad|durmuy|durmu |dinmed|dinmiy)|(durmad|durmuy)\w* .{0,20}kan")),
     ("zehirlenme / aşırı doz", (r"zehirlen|asiri doz|fazla (ilac|hap) (ic|al)|cok (ilac|hap) (ic|al)|(ilac|hap)\w* .{0,20}(fazla|cok) (ic|al)"
         r"|(camasir suyu|tiner|antifriz|bocek ilac|fare zehir|deterjan|temizleyici|lavabo acici|tarim ilac|gaz yag)\w*[^.]{0,30}\b(ic(ti|mis|ip)|yut\w*|yem\w*|yedi)"
-        r"|(avuc|cok fazla|fazla) .{0,15}(hap|ilac|agri kesici)|(uyku )?hap\w* .{0,10}avuc|cozucu\w* (ic|yut)|(ic|yut)\w* .{0,30}bogazi yaniyor|(hap|ilac)\w* .{0,15}(sise|kutu)\w* .{0,10}bitir|(kutu|sise)\w* .{0,25}ic(mis|ti)|pil yut|zirai ilac|sisesini agzina")),
+        r"|(avuc|cok fazla|fazla) .{0,15}(hap|ilac|agri kesici)|(uyku )?hap\w* .{0,10}avuc|cozucu\w* (ic|yut)|(ic|yut)\w* .{0,30}bogazi yaniyor|(hap|ilac)\w* .{0,15}(sise|kutu)\w* .{0,10}bitir|(hap|ilac|tablet)\w* (yuttu|yutmus)(?!\w)|(kutu|sise)\w* .{0,25}ic(mis|ti)|pil yut|zirai ilac|sisesini agzina")),
     ("ciddi alerjik reaksiyon", r"(dil|bogaz|dudak)\w* .{0,15}(sis|kabar)|anafilaksi"),
     ("nöbet", (r"havale|nobet\w* .{0,15}(gecir|geciriyor|basla)|kasilma\w* .{0,10}(basla|var)"
         r"|nobet\w* .{0,30}(dakika|gecti)|kasil\w*, doktor|(agzi acik|tukuruk\w* akiyor).{0,40}kasil|(yerde|vucud\w*) .{0,15}kasil|gozleri (geriye|kay)|agzindan kopuk|kaskati|beden\w* sarsil|sarsilmaya basla|agzi kopur|kopuruyor|cenesi kilitlen|(dondu|sustu) .{0,40}kasil")),

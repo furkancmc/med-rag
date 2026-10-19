@@ -48,3 +48,8 @@ def test_bilgi_kalibi_kendine_zarari_bastirmaz():
 
 def test_bilgi_kalibi_kisisel_aciliyette_bastirmaz():
     assert check_emergency("Zehirlenmeyi önlemek için ne yapılır? Annem şimdi çamaşır suyu içti").emergency
+
+
+def test_cocuk_ilac_yuttu_acil_ama_yutma_guclugu_degil():
+    assert check_emergency("3 yaşındaki oğlum az önce annemin tansiyon haplarını yuttu").emergency
+    assert not check_emergency("hapları yutmakta zorlanıyorum").emergency
