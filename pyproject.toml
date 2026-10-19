@@ -34,5 +34,8 @@ markers = ["gpu: gerçek model ve GPU ister (MEDRAG_GPU_TEST=1 ile çalışır)"
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.lint.per-file-ignores]
+"scripts/**" = ["SIM115", "ISC004", "B023", "RUF059"]  # tek seferlik ölçüm betikleri
+
 [tool.setuptools.package-data]
 medrag = ["web/*.html", "web/static/*", "web/static/**/*"]

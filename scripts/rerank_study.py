@@ -87,7 +87,6 @@ def main() -> None:
         queries = queries[: args.limit]
     print("değerlendirilen soru:", len(queries))
     retr = load_retriever(Settings())
-    chunk_by_id = {c["id"]: c for c in retr.chunks}
     rer = LocalReranker(doc_chars=1500)
     cand_lists = []
     for q in queries:

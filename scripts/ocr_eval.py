@@ -48,7 +48,7 @@ def norm(text: str) -> str:
 
 
 def unit_eq(a: str | None, b: str) -> bool:
-    fix = lambda x: (x or "").lower().replace("µ", "u").replace(" ", "")  # noqa: E731
+    fix = lambda x: (x or "").lower().replace("µ", "u").replace(" ", "")
     return fix(a) == fix(b)
 
 

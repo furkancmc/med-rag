@@ -39,15 +39,15 @@ class Settings(BaseSettings):
     embed_workers: int = 16  # paralel embedding isteği (H200: yüksek eşzamanlılık)
     embed_query_cache_size: int = 1024  # sorgu embedding LRU önbelleği; 0 kapatır
     # Reranker: vektör aramadan `rerank_pool` aday alınır, yeniden sıralanıp ilk k döner.
-    rerank_enabled: bool = False  # masraf nedeniyle kapalı (17.10.2026); açmak için MEDRAG_RERANK_ENABLED=true
+    rerank_enabled: bool = False  # GPU'da faydalı (pool 10: ~110 ms), CPU'da yavaş (~10 sn): açmak için MEDRAG_RERANK_ENABLED=true
     rerank_api_url: str = "https://evren-llmapi.ssyz.org.tr/v1"
     rerank_model: str = "qwen3-reranker-8b"
-    rerank_pool: int = 40
+    rerank_pool: int = 10  # ölçüm (queries_v2): 8-10 en iyisi; 40'ta kalite düşer ve 4x yavaştır
     rerank_batch_size: int = 20  # istek başına doküman; gruplar paralel gider
     rerank_timeout: float = 20.0  # saniye, yeniden denemeler dahil; aşılırsa vektör sırası
     rerank_template: str = "qwen3"  # "qwen3": Qwen3-Reranker talimat şablonu, "none": ham metin
     rerank_instruction: str = ""  # boşsa varsayılan talimat (rerank.py)
-    rerank_doc_chars: int = 1500  # rerank'e giden metin uzunluğu (4096 token bağlamına sığsın)
+    rerank_doc_chars: int = 600  # ölçüm: 600 > 1000 > 1500 (uzun metin sıralamayı bozuyor)
     # Çoklu sorgu: İngilizce çeviri + 1-2 Türkçe yeniden yazım, RRF ile birleşir (ölçülene kadar kapalı).
     multiquery_enabled: bool = False
     multiquery_model: str = "deepseek-v4.1-flash"

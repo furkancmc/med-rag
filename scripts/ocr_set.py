@@ -142,7 +142,7 @@ def render_box(drug: tuple, rnd: random.Random) -> Image.Image:
 # --- Bozulmalar ---
 def perspective(img: Image.Image, rnd: random.Random, s: float) -> Image.Image:
     w, h = img.size
-    j = lambda m: rnd.uniform(-m, m) * s  # noqa: E731
+    j = lambda m: rnd.uniform(-m, m) * s
     dx, dy = w * 0.07, h * 0.07
     quad = (j(dx) + dx * s, j(dy) + dy * s, j(dx) + dx * s, h - j(dy) - dy * s, w - j(dx) - dx * s, h - j(dy) * 0.5 - dy * s, w - j(dx) - dx * s, j(dy) + dy * s)
     return img.transform((w, h), Image.QUAD, quad, Image.BICUBIC, fillcolor="#9a8f80")

@@ -3,9 +3,8 @@
 import random
 from pathlib import Path
 
-from PIL import Image
-
 from ocr_set import DRUGS, degrade, pick_rows, render_box, render_report
+from PIL import Image
 
 OUT = Path("docs/screens/ocr")
 WIDTH = 640

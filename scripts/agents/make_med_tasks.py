@@ -20,7 +20,7 @@ LAB_FMT = (
     '"evidence": [{"claim": "...", "source_url": "...", "quote": "<kaynaktan KISA birebir alıntı>"}], '
     '"suggestion": "değişiklik gerekiyorsa somut öneri, yoksa boş"}'
 )
-rows = json.load(open("scratch/lab_rows.json", encoding="utf-8"))
+rows = json.loads(Path("scratch/lab_rows.json").read_text(encoding="utf-8"))
 items = []
 for r in rows:
     page = ""
