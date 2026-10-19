@@ -846,8 +846,10 @@ tanımla (otomatik bulunur); bağımlılık için `Depends(deps.get_llm)` / `Dep
 ## 20. Bilinen sınırlar
 
 - **Bilgi tabanı:** 33.573 parça indekste (kaynak başına dağılım §5). Kapsam dışı konuda "bilgi bulamadım" demesi beklenir.
-- **Tıbbi inceleme:** Tahlil referans aralıkları ve kritik eşikler, belirti kuralları bir hekim tarafından
-  gözden geçirilmedi. Aralıklar laboratuvara göre değişir; sistem raporun kendi aralığını önceler.
+- **Tıbbi inceleme:** Tahlil referans aralıkları, kritik eşikler ve belirti kuralları **hekim tarafından gözden geçirilmedi**.
+  Bunun yerine internetteki otoriter kaynaklarla (MedlinePlus, ADA/CDC, KDIGO, NICE, AAP, AHA, ACOG, NHS, Mayo Clinic, kurum kritik değer listeleri)
+  satır satır karşılaştırıldı ve bazı kurallar sıkılaştırıldı (`docs/tibbi-inceleme.md`). Karşılaştırmayı bir LLM yaptı ve web özetleri üzerinden
+  çalıştı; bu klinik onay yerine geçmez. Aralıklar laboratuvara göre değişir; sistem raporun kendi aralığını önceler.
 - **Acil durum tespiti** kurallara ve bir LLM'e dayanır; her ifadeyi yakalamaz. Bilgi amaçlı sorularda ("intihar nedir")
   da kriz mesajı çıkabilir.
 - **Doz filtresi** yazıyla yazılan yaygın ifadeleri yakalar ama her varyantı garanti etmez.

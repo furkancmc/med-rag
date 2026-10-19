@@ -9,6 +9,12 @@ Faz 2 iş akışlarının (A-G) tamamı ana dala birleşti. Ayrıntı: `ILERLEME
 - Son durum: 420 test geçti, ruff temiz; Docker imajı derlendi, healthy, root değil.
 - Anahtar yokken API 503 (`ConfigError`) döner; NIH ODS isteğe bağlı kaynak.
 
+## 19.10.2026 (Faz 3)
+- Yeni soru seti `eval/queries_v2.jsonl` (695 soru + 60 kapsam dışı, belge düzeyinde hakem etiketi); reranker ikinci ölçüm: `eval/results_v2_rerank.md`.
+- Varsayılanlar: `rerank_pool=10`, `rerank_doc_chars=600`; reranker GPU'da fayda, CPU'da yavaş (kapalı).
+- OCR: bozulmuş 48 rapor + 45 kutu ölçüldü (`eval/ocr_real_results.md`); README'de örnek görseller.
+- Tıbbi: tahlil tablosu ve belirti kuralları web kaynaklarıyla karşılaştırıldı; bazı kurallar yukarı çekildi (`docs/tibbi-inceleme.md`).
+
 ## Bekleyenler
-- Tıbbi inceleme onayı: labs referans aralıkları, D'nin "çocukta hafif ateş" beklenen aralığı (`docs/tibbi-inceleme.md`).
-- Kaynaklı uçtan uca testler (D/E) ve vektör aramayla güvenlik koşusu (C).
+- Hekim/klinik biyokimya incelemesi (web doğrulaması onun yerine geçmez).
+- Vektör aramayla uçtan uca güvenlik koşusu (C) ve kaynaklı D/E testleri; gerçek telefon fotoğrafıyla OCR.

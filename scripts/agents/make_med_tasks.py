@@ -6,7 +6,7 @@ from pathlib import Path
 SRC = Path("scratch/med_sources")
 OUT = Path("scratch/agents/med")
 OUT.mkdir(parents=True, exist_ok=True)
-curated = (SRC / "curated.md").read_text(encoding="utf-8") + (SRC / "curated2.md").read_text(encoding="utf-8")
+curated = "".join((SRC / f).read_text(encoding="utf-8") for f in ("curated.md", "curated2.md", "curated3.md"))
 meritus = (SRC / "meritus_critical.txt").read_text(encoding="utf-8", errors="ignore")
 uchi = (SRC / "uchicago_critical.txt").read_text(encoding="utf-8", errors="ignore")
 SYSTEM = (
@@ -42,7 +42,7 @@ for r in rows:
     items.append({"id": r["id"], "prompt": prompt})
 (OUT / "labs.json").write_text(
     json.dumps(
-        {"model": "glm-5.3", "system": SYSTEM, "max_tokens": 6000, "concurrency": 3, "temperature": 0.1, "items": items},
+        {"model": "deepseek-v4.1-flash", "timeout": 420, "system": SYSTEM, "max_tokens": 8000, "concurrency": 4, "temperature": 0.1, "items": items},
         ensure_ascii=False,
     ),
     encoding="utf-8",
@@ -51,11 +51,11 @@ for r in rows:
 GROUPS = {
     "ates": "3 aydan küçük bebekte ateş → emergency; bebekte (yaş 0 ya da ay biliniyor, ≥3 ay) ateş → today; 5 yaş altı yüksek ateş (≥39°C) → today; 5 yaş altı herhangi ateş → soon; ≥65 yaşta ateş → today; ateş ≥3 gün → today; yüksek ateş (≥39) tek başına → today; ateş + ense sertliği → emergency; ateş + döküntü/morarma → emergency; yüksek ateş + (ense sertliği|döküntü|konfüzyon) → emergency.",
     "gebelik": "Gebelikte kanama → emergency; gebelikte karın/kasık ağrısı → şiddetliyse emergency yoksa today; gebelikte baş ağrısı + görme bozukluğu/yüz-el şişliği → emergency; gebelikte durmayan kusma → today.",
-    "gogus_solunum": "Göğüs ağrısı eforla/terleme/sol kol-çene-sırt yayılımı/bulantı ile → emergency, aksi halde today; nefes darlığı dinlenirken/konuşamama/dudak morarması/şiddetli ile → emergency, aksi halde today; göğüs ağrısı + nefes darlığı → emergency; ani başlayan nefes darlığı ya da morarma → emergency.",
+    "gogus_solunum": "Göğüs ağrısı eforla/terleme/sol kol-çene-sırt yayılımı/bulantı ile ya da baskı/sıkışma tarifiyle → emergency, aksi halde today; nefes darlığı dinlenirken/konuşamama/dudak morarması/şiddetli ile → emergency, aksi halde today; göğüs ağrısı + nefes darlığı → emergency; ani başlayan nefes darlığı ya da morarma → emergency.",
     "norolojik": "Ani başlayan çok şiddetli (gök gürültüsü) baş ağrısı → emergency; ani görme kaybı → emergency; bilinç bulanıklığı/konfüzyon → emergency; baş travması: kusma/bayılma/uyku hali/bilinç/burun-kulaktan kan/nöbet varsa emergency, yoksa today; ani şiddetli testis ağrısı → emergency.",
-    "kanama_gi": "Kanlı kusma/kahve telvesi → emergency; siyah/kanlı dışkı → today; kanlı ishal → today; idrarda kan → today; kanlı balgam → today, nefes darlığı ile birlikteyse emergency; sarılık → today; sağ alt karın ağrısı/apandisit olasılığı veya ateşle karın ağrısı → today; şiddetli karın ağrısı → today.",
+    "kanama_gi": "Kanlı kusma/kahve telvesi → emergency; siyah/kanlı dışkı → today (baş dönmesi/bayılma/halsizlik ile → emergency); kanlı ishal → today; idrarda kan → today; kanlı balgam → today, nefes darlığı ile ya da çok miktarda/durmayan kanla birlikteyse emergency; sarılık → today; ateşle karın ağrısı → today; sağ alt karın ağrısı/apandisit olasılığı → today, ateş/şiddetli ağrı/kusma ile birlikteyse emergency; şiddetli karın ağrısı → today.",
     "cocuk_sivi": "5 yaş ve altı çocukta kusma/ishal + sıvı kaybı belirtisi (idrar azalması, ıslak bez yok, ağız kuruluğu, uyuşukluk) → today; 1 yaş altı bebekte kusma/ishal → today; 2 yaş ve altı çocukta yeşil (safralı) kusma → emergency.",
-    "zehir_yanik_seker": "Olası zehirlenme/aşırı doz/karbonmonoksit → emergency; yanık + nefes yolu belirtisi (ses kısıklığı, is/duman, boğaz şişmesi, nefes darlığı) → emergency; geniş/yüz-el-ayak/kimyasal/elektrik veya 5 yaş altı çocukta yanık → today; düşük kan şekeri belirtisi → today; kendine zarar verme düşüncesi → emergency.",
+    "zehir_yanik_seker": "Olası zehirlenme/aşırı doz/karbonmonoksit → emergency; yanık + nefes yolu belirtisi (ses kısıklığı, is/duman, boğaz şişmesi, nefes darlığı) → emergency; kimyasal ya da elektrik yanığı → emergency; geniş/yüz-el-ayak veya 5 yaş altı çocukta yanık → today; düşük kan şekeri belirtisi → today; kendine zarar verme düşüncesi → emergency.",
 }
 RULE_FMT = (
     '{"group": "...", "items": [{"claim": "kuraldaki tek iddia", "code_level": "emergency|today|soon|home", '
@@ -79,7 +79,7 @@ for gid, claims in GROUPS.items():
     )
 (OUT / "rules.json").write_text(
     json.dumps(
-        {"model": "glm-5.3", "system": SYSTEM, "max_tokens": 6000, "concurrency": 2, "temperature": 0.1, "items": ritems},
+        {"model": "deepseek-v4.1-flash", "timeout": 420, "system": SYSTEM, "max_tokens": 8000, "concurrency": 2, "temperature": 0.1, "items": ritems},
         ensure_ascii=False,
     ),
     encoding="utf-8",

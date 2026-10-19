@@ -22,6 +22,8 @@ arama, sohbet servisi (acil kontrol, atıf, doz filtresi), FastAPI + SSE, web ar
 | G Arayüz | ortak tasarım sistemi, 4 sayfa, alt gezinme, tema, ses, PWA |
 | H Belgeler | README ve değişiklik günlüğü her birleştirmede güncellenir |
 
+**Faz 3 (19.10.2026) tamamlandı:** belge düzeyinde etiketli yeni soru seti (`eval/queries_v2.jsonl`), reranker ikinci ölçümü (varsayılan: havuz 10, 600 karakter; yalnız GPU'da önerilir), bozulmuş görsellerle OCR ölçümü ve README örnekleri, tahlil/belirti kurallarının web kaynaklarıyla doğrulanması (`docs/tibbi-inceleme.md`; hekim onayı değildir), git geçmişi temizliği.
+
 ## Paralel çalışma düzeni
 
 Her iş akışı ayrı bir ajan tarafından ayrı bir çalışma kopyasında (worktree) yürütülür, sonra ana dala

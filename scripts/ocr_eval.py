@@ -123,6 +123,7 @@ def main() -> None:
     ap.add_argument("--report-models", default="ocr:deepseek-ocr-2,ocr:dots-ocr,chat:qwen3-vl-30b,chat:gemma-4-31b")
     ap.add_argument("--box-models", default="qwen3-vl-30b,gemma-4-31b")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--levels", default="", help="yalnız bu düzeyler (virgülle), örn. ağır")
     ap.add_argument("--workers", type=int, default=4)
     args = ap.parse_args()
     load_env()
@@ -130,6 +131,10 @@ def main() -> None:
     manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
     reports = [m for m in manifest if m["kind"] == "report"]
     boxes = [m for m in manifest if m["kind"] == "box"]
+    if args.levels:
+        keep = set(args.levels.split(","))
+        reports = [m for m in reports if m["level"] in keep]
+        boxes = [m for m in boxes if m["level"] in keep]
     if args.limit:
         reports, boxes = reports[: args.limit], boxes[: args.limit]
     raw: dict[str, list[dict]] = {}
@@ -167,8 +172,8 @@ def main() -> None:
             )
         print(lines[-1])
     errs = sum(1 for v in raw.values() for r in v if r.get("error"))
-    lines += ["", f"İstek hatası olan görsel sayısı (toplam): {errs}. Ayrıntı: `scratch/ocr/results.json` (repoya alınmaz)."]
-    (root / "results.json").write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
+    lines += ["", f"İstek hatası olan görsel sayısı (toplam): {errs}. Ayrıntı: `scratch/ocr/results_*.json` (repoya alınmaz)."]
+    (root / f"results_{Path(args.out).stem}.json").write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
     Path(args.out).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"yazıldı: {args.out}")
 
