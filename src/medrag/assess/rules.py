@@ -124,6 +124,8 @@ SELF_HARM = _rx(r"kendime zarar|kendimi kes|hayatima son|yasamak istemiyorum|olm
 CHEST_PRESSURE = _rx(r"(gogus|gogsum|gogs)\w* .{0,30}(baski|sikis|ezil|agirlik|doluluk)|(baski|sikis|ezil)\w* .{0,30}(gogus|gogsum)")
 FAINT = _rx(r"bas\w* don|bayil|bayginlik|gozlerim kararir|gozum kararir|cok halsiz|sersem|renk\w* soluk|nabz\w* hizli|carpinti")
 MUCH_BLOOD = _rx(r"cok (fazla )?kan|bol kan|kan durmuyor|durmayan kan|litre|fiskir|tukurukle kan dolu|agzim kan dolu")
+BURN_MAJOR = _rx(r"genis|yuz\w*|bogaz|genital|cinsel|kasik")
+HYPO_SEVERE = _rx(r"bayil|nobet|bilinc\w* (kapan|bulan|kay)|yutam|konusam|cok sersem|uyanam")
 CHEM_ELEC_BURN = _rx(r"kimyasal yan|asit\w* .{0,10}(yan|dokul)|elektrik carp|yildirim")
 PRESSURE_HEAD_PREG = _rx(r"gorme (bulan|bozul)|gozlerimde (isik|cakma)|yuz\w* sis|el\w* sis")
 
@@ -224,7 +226,7 @@ def evaluate_context(ctx: Context) -> RuleResult:
     if (age is not None and age <= 2 or months is not None) and has(BILIOUS):
         res.add("Bebekte/küçük çocukta yeşil (safralı) kusma", "emergency")
     if has(HYPOGLY):
-        res.add("Düşük kan şekeri belirtisi", "today")
+        res.add("Düşük kan şekeri belirtisi", "emergency" if has(HYPO_SEVERE) else "today")
     if has(BLOODY_DIARRHEA):
         res.add("Kanlı ishal", "today")
     if has(RLQ_PAIN) or (has(ABD_PAIN) and fever):
@@ -235,8 +237,10 @@ def evaluate_context(ctx: Context) -> RuleResult:
             res.add("Nefes yolunu ilgilendirebilen yanık", "emergency")
         elif has(CHEM_ELEC_BURN):
             res.add("Kimyasal ya da elektrik yanığı", "emergency")
+        elif has(BURN_MAJOR):
+            res.add("Geniş ya da yüz/boğaz/genital bölgesinde yanık", "emergency")
         elif has(BURN_RED) or (age is not None and age < 5):
-            res.add("Geniş, yüz/el/ayak, kimyasal/elektrik ya da çocukta yanık", "today")
+            res.add("El/ayak, su toplamış ya da çocukta yanık", "today")
     if has(HIGH_FEVER):
         res.add("Yüksek ateş", "today")
     if fever and has(FEVER_DAYS):
@@ -244,7 +248,7 @@ def evaluate_context(ctx: Context) -> RuleResult:
     if age is not None and age >= 65 and fever:
         res.add("İleri yaşta ateş", "today")
     if has(ABD_PAIN) and has(SEVERE):
-        res.add("Şiddetli karın ağrısı", "today")
+        res.add("Şiddetli karın ağrısı", "emergency")
     if age is not None and age <= 5 and (has(VOMIT) or has(DIARRHEA)) and has(DEHYDR):
         res.add("Küçük çocukta kusma/ishal ve sıvı kaybı belirtisi", "today")
     if age is not None and age < 1 and (has(VOMIT) or has(DIARRHEA)):
