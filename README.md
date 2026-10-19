@@ -435,6 +435,52 @@ flowchart LR
 - **İlaç kutusu:** `qwen3-vl-30b` ile ad, etken madde, güç ve form okunur, **doz önerilmez**.
 - **Sınır:** Referans aralıkları ve kritik eşikler tıbbi olarak bir hekim tarafından gözden geçirilmelidir.
 
+### OCR örnekleri: normal ve bozulmuş görseller
+
+Tahlil ve ilaç kutusu okumayı, telefon fotoğrafını taklit eden **bozulmuş görsellerle** ölçtük (`scripts/ocr_set.py`
+üretir, `scripts/ocr_eval.py` ölçer; yöntem ve sonuçlar: [`eval/ocr_real_results.md`](eval/ocr_real_results.md)).
+Aşağıda aynı içeriğin normal hâli ile üç bozulma düzeyi var. Hafif düzeyde 1, orta düzeyde 2, ağır düzeyde 4 bozulma
+birlikte uygulanır: perspektif eğimi, gölge, flaş parlaması, buruşma, bulanıklık, düşük ışık ve kenar kırpma; hepsinin
+üstüne JPEG sıkıştırma gelir. Görseller sentetiktir (Pillow ile çizildi), gerçek bir kişiye ya da markaya ait veri içermez.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-normal.jpg" width="150"><br><sub>Klasik tablo raporu: normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-normal.jpg" width="150"><br><sub>e-Nabız tarzı rapor: normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-normal.jpg" width="150"><br><sub>İlaç kutusu (Parol): normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-normal.jpg" width="150"><br><sub>İlaç kutusu (Nurofen): normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+</table>
+
+Sonuç özeti (48 rapor, 45 kutu; ayrıntı ve model karşılaştırması `eval/ocr_real_results.md` dosyasında):
+
+| Görsel | Hafif / orta bozulma | Ağır bozulma |
+|---|---|---|
+| Tahlil değerleri (4 model) | %98-100 doğru | %41-54 (**yeniden ölçülecek**: ölçüm sırasında API hız sınırı hataları sonucu bozmuş olabilir) |
+| İlaç kutusu, `gemma-4-31b` | marka %100, etken madde %100, güç %80-100 | marka %93, etken madde %80, güç %87 |
+
+Okuma: temiz ve hafif/orta bozulmuş görsellerde değerler neredeyse hatasız okunuyor; ağır bozulmada doğruluk düşüyor,
+bu yüzden arayüz okunan her satırı kullanıcı onayına sunuyor ve "net bir fotoğraf deneyin" uyarısı veriyor.
+Bu ölçüm sentetik görsellerledir; gerçek telefon fotoğrafı doğruluğu bunların altında olabilir.
+
 ---
 
 ## 10. Güvenlik tasarımı

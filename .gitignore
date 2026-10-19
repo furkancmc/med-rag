@@ -10,3 +10,4 @@ data/*
 
 # Claude Code çalışma kopyaları (paralel ajanlar)
 .claude/
+scratch/

@@ -22,7 +22,8 @@ from medrag.llm import EvrenLLM, LLMError, strip_think
 def run(task: dict, out: Path, llm: EvrenLLM) -> tuple[int, int]:
     done = set()
     if out.exists():
-        done = {json.loads(line)["id"] for line in out.read_text(encoding="utf-8").splitlines() if line}
+        rows = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines() if line]
+        done = {r["id"] for r in rows if r["ok"]}  # başarısızlar yeniden denenir (en son satır geçerli)
     todo = [it for it in task["items"] if it["id"] not in done]
     system = task.get("system", "")
     client = llm.with_model(task["model"], extra_params=task.get("extra"))
