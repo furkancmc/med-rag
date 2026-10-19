@@ -120,6 +120,11 @@ JAUNDICE = _rx(r"sarilik|gozlerim saril|gozlerin\w* saril|cildim saril")
 FEVER_DAYS = _rx(r"ates\w* .{0,30}\b([3-9]|1\d)\s*gun|\b([3-9]|1\d)\s*gundur .{0,15}ates|(uc|dort|bes|alti|yedi|bir hafta)\w* .{0,6}gundur .{0,15}ates|ates\w* .{0,30}(uc|dort|bes|alti|yedi) gun|bir haftadir ates")
 INFANT_AGE_TEXT = _rx(r"\b(\d{1,2})\s*(haftalik|gunluk)\b|yeni dogan|yenidogan|\b([0-2])\s*aylik\b")
 SELF_HARM = _rx(r"kendime zarar|kendimi kes|hayatima son|yasamak istemiyorum|olmek istiyorum|intihar")
+# Web kaynaklı doğrulama (docs/tibbi-inceleme.md) ile eklenenler: hepsi aciliyeti yalnızca yukarı çeker.
+CHEST_PRESSURE = _rx(r"(gogus|gogsum|gogs)\w* .{0,30}(baski|sikis|ezil|agirlik|doluluk)|(baski|sikis|ezil)\w* .{0,30}(gogus|gogsum)")
+FAINT = _rx(r"bas\w* don|bayil|bayginlik|gozlerim kararir|gozum kararir|cok halsiz|sersem|renk\w* soluk|nabz\w* hizli|carpinti")
+MUCH_BLOOD = _rx(r"cok (fazla )?kan|bol kan|kan durmuyor|durmayan kan|litre|fiskir|tukurukle kan dolu|agzim kan dolu")
+CHEM_ELEC_BURN = _rx(r"kimyasal yan|asit\w* .{0,10}(yan|dokul)|elektrik carp|yildirim")
 PRESSURE_HEAD_PREG = _rx(r"gorme (bulan|bozul)|gozlerimde (isik|cakma)|yuz\w* sis|el\w* sis")
 
 
@@ -176,7 +181,7 @@ def evaluate_context(ctx: Context) -> RuleResult:
         if has(VOMIT) and has(_rx(r"hic (yiyem|icem)|surekli|durmuyor|hic tutmuyor")):
             res.add("Gebelikte durmayan kusma", "today")
     if has(CHEST):
-        if has(CHEST_RED):
+        if has(CHEST_RED) or has(CHEST_PRESSURE):
             res.add("Eforla, terlemeyle veya yayılımla birlikte göğüs ağrısı", "emergency")
         else:
             res.add("Göğüs ağrısı", "today")
@@ -199,11 +204,11 @@ def evaluate_context(ctx: Context) -> RuleResult:
     if has(HEAD_TRAUMA):
         res.add("Baş travması", "emergency" if has(HEAD_TRAUMA_RED) else "today")
     if has(BLACK_STOOL):
-        res.add("Dışkıda kan veya siyah dışkı", "today")
+        res.add("Dışkıda kan veya siyah dışkı", "emergency" if has(FAINT) else "today")
     if has(BLOOD_URINE):
         res.add("İdrarda kan", "today")
     if has(COUGH_BLOOD):
-        res.add("Kanlı balgam/öksürük", "today")
+        res.add("Kanlı balgam/öksürük", "emergency" if has(MUCH_BLOOD) else "today")
     if has(JAUNDICE):
         res.add("Sarılık", "today")
     if has(POISON):
@@ -223,10 +228,13 @@ def evaluate_context(ctx: Context) -> RuleResult:
     if has(BLOODY_DIARRHEA):
         res.add("Kanlı ishal", "today")
     if has(RLQ_PAIN) or (has(ABD_PAIN) and fever):
-        res.add("Ateşle birlikte ya da sağ alt karın ağrısı (apandisit olasılığı)", "today")
+        urgent = has(RLQ_PAIN) and (fever or has(SEVERE) or has(VOMIT))
+        res.add("Ateşle birlikte ya da sağ alt karın ağrısı (apandisit olasılığı)", "emergency" if urgent else "today")
     if has(BURN):
         if has(BURN_AIRWAY):
             res.add("Nefes yolunu ilgilendirebilen yanık", "emergency")
+        elif has(CHEM_ELEC_BURN):
+            res.add("Kimyasal ya da elektrik yanığı", "emergency")
         elif has(BURN_RED) or (age is not None and age < 5):
             res.add("Geniş, yüz/el/ayak, kimyasal/elektrik ya da çocukta yanık", "today")
     if has(HIGH_FEVER):

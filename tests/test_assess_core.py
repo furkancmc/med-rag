@@ -230,9 +230,17 @@ def test_medical_review_floor_rules():
         ("ağzı burnu mosmor, çocuk nefes almıyor", 1, "emergency"),
         ("diyabetim var, şekerim düştü terliyorum titriyorum", 50, "today"),
         ("kanlı ishal, çocukta", 5, "today"),
-        ("karın ağrım sağ altta ve ateşim var", 25, "today"),
+        ("karın ağrım sağ altta ve ateşim var", 25, "emergency"),
         ("elimde geniş, su toplamış bir yanık var", 30, "today"),
         ("yüzüme kaynar su döküldü, nefes almakta zorlanıyorum", 30, "emergency"),
+    ]
+    cases += [  # web kaynaklı doğrulama (docs/tibbi-inceleme.md)
+        ("göğsümde baskı var", 55, "emergency"),
+        ("siyah katran gibi dışkı yapıyorum ve başım dönüyor", 45, "emergency"),
+        ("öksürürken çok kan geliyor, kanlı balgam", 45, "emergency"),
+        ("kimyasal yanık oldu elime", 30, "emergency"),
+        ("elektrik çarptı", 30, "emergency"),
+        ("sağ alt karnımda şiddetli ağrı var", 25, "emergency"),
     ]
     for text, age, minimum in cases:
         res = evaluate(text, Profile(age=age))
