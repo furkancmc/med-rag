@@ -1,0 +1,809 @@
+[
+ {
+  "id": "hemoglobin",
+  "name": "Hemoglobin",
+  "unit": "g/dL",
+  "ranges": {
+   "male": [
+    13.8,
+    17.2
+   ],
+   "female": [
+    12.1,
+    15.1
+   ]
+  },
+  "units": {
+   "g/L": [
+    0.1,
+    0
+   ],
+   "mmol/L": [
+    1.611,
+    0
+   ]
+  },
+  "crit_low": 7.0,
+  "crit_high": 20.0,
+  "url": "https://medlineplus.gov/lab-tests/hemoglobin-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "hematocrit",
+  "name": "Hematokrit",
+  "unit": "%",
+  "ranges": {
+   "male": [
+    40.7,
+    50.3
+   ],
+   "female": [
+    36.1,
+    44.3
+   ]
+  },
+  "units": {
+   "L/L": [
+    100,
+    0
+   ]
+  },
+  "crit_low": 21.0,
+  "crit_high": 60.0,
+  "url": "https://medlineplus.gov/lab-tests/hematocrit-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "wbc",
+  "name": "Lökosit (akyuvar)",
+  "unit": "10^3/µL",
+  "ranges": {
+   "all": [
+    4.5,
+    11.0
+   ]
+  },
+  "units": {
+   "/µL": [
+    0.001,
+    0
+   ],
+   "/mm3": [
+    0.001,
+    0
+   ],
+   "10^9/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": 2.0,
+  "crit_high": 30.0,
+  "url": "https://medlineplus.gov/lab-tests/white-blood-count-wbc/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "platelet",
+  "name": "Trombosit",
+  "unit": "10^3/µL",
+  "ranges": {
+   "all": [
+    150.0,
+    450.0
+   ]
+  },
+  "units": {
+   "/µL": [
+    0.001,
+    0
+   ],
+   "/mm3": [
+    0.001,
+    0
+   ],
+   "10^9/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": 20.0,
+  "crit_high": 1000.0,
+  "url": "https://medlineplus.gov/lab-tests/platelet-tests/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "rbc",
+  "name": "Eritrosit (alyuvar)",
+  "unit": "10^6/µL",
+  "ranges": {
+   "male": [
+    4.7,
+    6.1
+   ],
+   "female": [
+    4.2,
+    5.4
+   ]
+  },
+  "units": {
+   "/µL": [
+    1e-06,
+    0
+   ],
+   "/mm3": [
+    1e-06,
+    0
+   ],
+   "10^12/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/red-blood-cell-rbc-count/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "mcv",
+  "name": "MCV (ortalama alyuvar hacmi)",
+  "unit": "fL",
+  "ranges": {
+   "all": [
+    80.0,
+    100.0
+   ]
+  },
+  "units": {},
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/complete-blood-count-cbc/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Hemogram"
+ },
+ {
+  "id": "glucose",
+  "name": "Açlık kan şekeri (glukoz)",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    70.0,
+    99.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    18.016,
+    0
+   ]
+  },
+  "crit_low": 54.0,
+  "crit_high": 400.0,
+  "url": "https://medlineplus.gov/lab-tests/blood-glucose-test/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Şeker"
+ },
+ {
+  "id": "hba1c",
+  "name": "HbA1c (glikozile hemoglobin)",
+  "unit": "%",
+  "ranges": {
+   "all": [
+    4.0,
+    5.6
+   ]
+  },
+  "units": {
+   "mmol/mol": [
+    0.09148,
+    2.152
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 12.0,
+  "url": "https://medlineplus.gov/lab-tests/hemoglobin-a1c-hba1c-test/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Şeker"
+ },
+ {
+  "id": "cholesterol",
+  "name": "Total kolesterol",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    null,
+    200.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    38.67,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/cholesterol-levels/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Kan yağları"
+ },
+ {
+  "id": "ldl",
+  "name": "LDL kolesterol",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    null,
+    129.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    38.67,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/cholesterol-levels/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Kan yağları"
+ },
+ {
+  "id": "hdl",
+  "name": "HDL kolesterol",
+  "unit": "mg/dL",
+  "ranges": {
+   "male": [
+    40.0,
+    null
+   ],
+   "female": [
+    50.0,
+    null
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    38.67,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/cholesterol-levels/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Kan yağları"
+ },
+ {
+  "id": "triglyceride",
+  "name": "Trigliserid",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    null,
+    149.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    88.57,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 1000.0,
+  "url": "https://medlineplus.gov/lab-tests/triglycerides-test/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "Kan yağları"
+ },
+ {
+  "id": "creatinine",
+  "name": "Kreatinin",
+  "unit": "mg/dL",
+  "ranges": {
+   "male": [
+    0.74,
+    1.35
+   ],
+   "female": [
+    0.59,
+    1.04
+   ]
+  },
+  "units": {
+   "µmol/L": [
+    0.01131,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 4.0,
+  "url": "https://medlineplus.gov/lab-tests/creatinine-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Böbrek"
+ },
+ {
+  "id": "urea",
+  "name": "Üre",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    13.0,
+    51.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    6.006,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 170.0,
+  "url": "https://medlineplus.gov/lab-tests/bun-blood-urea-nitrogen/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı (BUN 6-24 mg/dL x 2,14 üre dönüşümü)",
+  "group": "Böbrek"
+ },
+ {
+  "id": "bun",
+  "name": "BUN (kan üre azotu)",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    6.0,
+    24.0
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    2.801,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 80.0,
+  "url": "https://medlineplus.gov/lab-tests/bun-blood-urea-nitrogen/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Böbrek"
+ },
+ {
+  "id": "uric_acid",
+  "name": "Ürik asit",
+  "unit": "mg/dL",
+  "ranges": {
+   "male": [
+    3.4,
+    7.0
+   ],
+   "female": [
+    2.4,
+    6.0
+   ]
+  },
+  "units": {
+   "µmol/L": [
+    0.01681,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/uric-acid-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Böbrek"
+ },
+ {
+  "id": "alt",
+  "name": "ALT (SGPT)",
+  "unit": "U/L",
+  "ranges": {
+   "male": [
+    7.0,
+    55.0
+   ],
+   "female": [
+    7.0,
+    45.0
+   ]
+  },
+  "units": {},
+  "crit_low": null,
+  "crit_high": 1000.0,
+  "url": "https://medlineplus.gov/lab-tests/alt-blood-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "ast",
+  "name": "AST (SGOT)",
+  "unit": "U/L",
+  "ranges": {
+   "male": [
+    8.0,
+    48.0
+   ],
+   "female": [
+    8.0,
+    43.0
+   ]
+  },
+  "units": {},
+  "crit_low": null,
+  "crit_high": 1000.0,
+  "url": "https://medlineplus.gov/lab-tests/ast-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "ggt",
+  "name": "GGT (gama GT)",
+  "unit": "U/L",
+  "ranges": {
+   "male": [
+    8.0,
+    61.0
+   ],
+   "female": [
+    5.0,
+    36.0
+   ]
+  },
+  "units": {},
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/gamma-glutamyl-transferase-ggt-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "alp",
+  "name": "ALP (alkalen fosfataz)",
+  "unit": "U/L",
+  "ranges": {
+   "all": [
+    40.0,
+    129.0
+   ]
+  },
+  "units": {},
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/alkaline-phosphatase/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "bilirubin",
+  "name": "Total bilirubin",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    0.1,
+    1.2
+   ]
+  },
+  "units": {
+   "µmol/L": [
+    0.0585,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 10.0,
+  "url": "https://medlineplus.gov/lab-tests/bilirubin-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "albumin",
+  "name": "Albümin",
+  "unit": "g/dL",
+  "ranges": {
+   "all": [
+    3.5,
+    5.0
+   ]
+  },
+  "units": {
+   "g/L": [
+    0.1,
+    0
+   ]
+  },
+  "crit_low": 2.0,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/albumin-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Karaciğer"
+ },
+ {
+  "id": "tsh",
+  "name": "TSH",
+  "unit": "mIU/L",
+  "ranges": {
+   "all": [
+    0.4,
+    4.0
+   ]
+  },
+  "units": {
+   "µIU/mL": [
+    1.0,
+    0
+   ],
+   "uIU/mL": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/tsh-thyroid-stimulating-hormone-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Tiroit"
+ },
+ {
+  "id": "ft4",
+  "name": "Serbest T4 (sT4)",
+  "unit": "ng/dL",
+  "ranges": {
+   "all": [
+    0.8,
+    1.8
+   ]
+  },
+  "units": {
+   "pmol/L": [
+    0.0777,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/thyroxine-t4-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Tiroit"
+ },
+ {
+  "id": "ferritin",
+  "name": "Ferritin",
+  "unit": "ng/mL",
+  "ranges": {
+   "male": [
+    24.0,
+    336.0
+   ],
+   "female": [
+    11.0,
+    307.0
+   ]
+  },
+  "units": {
+   "µg/L": [
+    1.0,
+    0
+   ],
+   "ug/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/ferritin-blood-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Vitamin ve mineral"
+ },
+ {
+  "id": "iron",
+  "name": "Demir (serum)",
+  "unit": "µg/dL",
+  "ranges": {
+   "male": [
+    65.0,
+    175.0
+   ],
+   "female": [
+    50.0,
+    170.0
+   ]
+  },
+  "units": {
+   "µmol/L": [
+    5.585,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/iron-tests/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Vitamin ve mineral"
+ },
+ {
+  "id": "b12",
+  "name": "B12 vitamini",
+  "unit": "pg/mL",
+  "ranges": {
+   "all": [
+    200.0,
+    900.0
+   ]
+  },
+  "units": {
+   "pmol/L": [
+    1.355,
+    0
+   ],
+   "ng/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/vitamin-b-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Vitamin ve mineral"
+ },
+ {
+  "id": "folate",
+  "name": "Folat (folik asit)",
+  "unit": "ng/mL",
+  "ranges": {
+   "all": [
+    4.0,
+    null
+   ]
+  },
+  "units": {
+   "nmol/L": [
+    0.4414,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/vitamin-b-test/",
+  "ref_source": "Mayo Clinic Laboratories tipik yetişkin aralığı",
+  "group": "Vitamin ve mineral"
+ },
+ {
+  "id": "vitamin_d",
+  "name": "D vitamini (25-OH)",
+  "unit": "ng/mL",
+  "ranges": {
+   "all": [
+    20.0,
+    100.0
+   ]
+  },
+  "units": {
+   "nmol/L": [
+    0.4006,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 150.0,
+  "url": "https://medlineplus.gov/lab-tests/vitamin-d-test/",
+  "ref_source": "NIH Beslenme Takviyeleri Ofisi (D vitamini bilgi notu) ve Mayo Clinic Laboratories",
+  "group": "Vitamin ve mineral"
+ },
+ {
+  "id": "crp",
+  "name": "CRP",
+  "unit": "mg/L",
+  "ranges": {
+   "all": [
+    0.0,
+    5.0
+   ]
+  },
+  "units": {
+   "mg/dL": [
+    10.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": 100.0,
+  "url": "https://medlineplus.gov/lab-tests/c-reactive-protein-crp-test/",
+  "ref_source": "Yaygın klinik hedef/eşik değeri (MedlinePlus ve ilgili rehberler)",
+  "group": "İltihap"
+ },
+ {
+  "id": "sodium",
+  "name": "Sodyum",
+  "unit": "mmol/L",
+  "ranges": {
+   "all": [
+    135.0,
+    145.0
+   ]
+  },
+  "units": {
+   "mEq/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": 125.0,
+  "crit_high": 155.0,
+  "url": "https://medlineplus.gov/lab-tests/sodium-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Elektrolit"
+ },
+ {
+  "id": "potassium",
+  "name": "Potasyum",
+  "unit": "mmol/L",
+  "ranges": {
+   "all": [
+    3.6,
+    5.2
+   ]
+  },
+  "units": {
+   "mEq/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": 3.0,
+  "crit_high": 6.0,
+  "url": "https://medlineplus.gov/lab-tests/potassium-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Elektrolit"
+ },
+ {
+  "id": "chloride",
+  "name": "Klor",
+  "unit": "mmol/L",
+  "ranges": {
+   "all": [
+    98.0,
+    107.0
+   ]
+  },
+  "units": {
+   "mEq/L": [
+    1.0,
+    0
+   ]
+  },
+  "crit_low": null,
+  "crit_high": null,
+  "url": "https://medlineplus.gov/lab-tests/chloride-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Elektrolit"
+ },
+ {
+  "id": "calcium",
+  "name": "Kalsiyum (total)",
+  "unit": "mg/dL",
+  "ranges": {
+   "all": [
+    8.6,
+    10.3
+   ]
+  },
+  "units": {
+   "mmol/L": [
+    4.008,
+    0
+   ]
+  },
+  "crit_low": 7.0,
+  "crit_high": 12.0,
+  "url": "https://medlineplus.gov/lab-tests/calcium-blood-test/",
+  "ref_source": "MedlinePlus (ABD Ulusal Tıp Kütüphanesi) tipik yetişkin aralığı",
+  "group": "Elektrolit"
+ }
+]

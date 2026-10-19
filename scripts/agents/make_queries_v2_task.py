@@ -1,4 +1,7 @@
-"""queries_v2 için soru üretim görevi: kaynak/dil dengeli parça örneklemi + üslup çeşitliliği."""
+"""queries_v2 için soru üretim görevi: kaynak/dil dengeli parça örneklemi + üslup çeşitliliği.
+
+Sıra: bu betik (task.json, oos.json) -> run_task.py ile gen/oos.jsonl -> make_judge_task.py -> run_task.py ile judge.out.jsonl.
+Ara çıktılar scratch/agents/queries_v2 altında üretilir (repoya alınmaz); nihai set eval/queries_v2.jsonl."""
 
 import json
 import random

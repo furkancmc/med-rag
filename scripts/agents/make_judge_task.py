@@ -1,6 +1,6 @@
 """queries_v2: üretilen soruları temizler, her soru için aday parçaları getirir ve hakem görevi hazırlar.
 
-Girdi : scratch/agents/queries_v2/{task.json, gen.jsonl, oos.jsonl}
+Girdi : scratch/agents/queries_v2/{task.json, gen.jsonl, oos.jsonl} (make_queries_v2_task.py + run_task.py üretir)
 Çıktı : scratch/agents/queries_v2/{queries_raw.jsonl, judge.json}
 Hakem her aday için "bu parça soruyu doğrudan cevaplıyor mu" der; belge düzeyinde ilgili kümeyi sonradan birleştiririz.
 """

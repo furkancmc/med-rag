@@ -1,0 +1,113 @@
+                                LABORATORY CRITICAL VALUES
+
+                                                       (CALL-BACK)
+
+                                                       (Updated August 2018)
+
+CHEMISTRY
+
+                ASSAY                     LOWER LIMIT                         UPPER LIMIT
+
+Acetaminophen                                                                 Greater than 50 µg/mL
+
+Alanine Aminotransferase (ALT)                                                Greater than 1000 U/L
+
+Aspartate Aminotransferase (AST)                                              Greater than 1000 U/L
+
+Amylase                                                                       Greater than 355 IU/L
+
+Bilirubin (Neonatal)                                                          Greater than 10 mg/dL
+
+BUN                                                                           Greater than 100 mg/dL
+
+Calcium, Ionized                          Less than 2 mg/dL                   Greater than 6 mg/dL
+
+Calcium, Total                            Less than 7 mg/dL                   Greater than 12 mg/dL
+
+Carbamazepine                                                                 Greater than 12 mcg/ml
+
+Carbon dioxide                            Less than 15 mEq/L                  Greater than 40 mEq/L
+
+Creatine Kinase (CPK)                                                         Greater than 1000 IU/L
+
+CSF Glucose                               Less than 40 mg/dL
+
+Cyclosporin                                                                   Greater than 400 ng/mL
+
+Digoxin                                                                       Greater than 2 ng/mL
+
+Dilantin                                                                      Greater than 30 µg/mL
+
+Gentamycin (trough)                                                           Greater than 2 µg/mL
+
+Glucose                                   Less than 53 mg/dL                  Greater than 400 mg/dL
+
+Iron, Serum (less than 18 yrs)                                                Greater than 300 µg/dL
+
+Lactic Acid                                                                   Greater than 3.9 mmol/L
+
+Lithium                                                                       Greater than 1.5 mEq/L
+
+Magnesium                                 Less than 1 mg/dL                   Greater than 5 mg/dL
+
+pH (venous)                               Less than 7.2                       Greater than 7.6
+
+Phenobarbitol                                                                 Greater than 40 µg/mL
+
+Phosphorus                                Less than 1 mg/dL
+
+Potassium                                 Less than 2.5 mEq/L                 Greater than 6.0 mEq/L
+
+Salicylate                                                                    Greater than 30 mg/dL
+
+Sodium                                    Less than 120 mEq/L                 Greater than 160 mEq/L
+
+Tacrolimus                                                                    Greater than 20 ng/mL
+
+Theophylline                                                                  Greater than 20 µg/mL
+
+Tobramycin (trough)                                                           Greater than 2 µg/mL
+
+Troponin                                                                      ANY POSITIVE
+
+Vancomycin (peak)                                                             Greater than 50 mcg/ml
+
+Vancomycin (trough)                       Less than 10 mcg/ml
+
+HEMATOLOGY
+
+                ASSAY                     LOWER LIMIT                         UPPER LIMIT
+
+Fibrinogen                                Less than 100 mg/dL
+
+HGB-Hemoglobin                            Less than 7 g/dL
+
+INR                                                                           Greater than or Equal to 4.5
+
+PLT-Platelet Count                        Less than 30.0 K/uL                 Greater than 1,000 K/uL
+
+PTT-Partial Thromboplastin Time                                               Greater than 150 seconds
+
+WBC-White Blood Count                     Less than 2.0 K/uL                  Greater than 30.0 K/uL
+
+MICROBIOLOGY
+
+ Cultures
+
+             o All positive Blood Culture results, as determined by Gram stain, NANOSPHERE Blood Culture, PNA FISH
+                   Candida, and/or culture growth.
+
+             o CSF or corneal scrapings showing any growth, including bacterial or fungal.
+
+             o All initial positive results for MRSA.
+
+ Blood Malarial Smear - Any positive result.
+
+ Gram Stains - All CSF and corneal scrapings, lower respiratory smears consistent with pneumonia (many WBCs and
+      predominance of one organism type) and male genital specimens showing intracellular gram-negative diplococci.
+
+ India Ink- Any positive India Ink Prep.
+
+ Group B Streptococcus RT-PCR - Any positive results.
+ Clostridium difficile RT-PCR- All positive results.
+

@@ -1,0 +1,151 @@
+               The University of Chicago Medical Center Laboratories
+                            APPENDIX 1 - Critical Value List
+
+Clinical Chemistry (Serum)
+
+            Analyte         Unit    Low                               High   Age Range
+                                     ----                             >18     0-14 days
+Bilirubin Total, Newborn    mg/dL   < 6.0                             >13     Any Age
+                                    < 10                              >40     Any Age
+Calcium                     mg/dL   < 40                              >500    Any Age
+                                    < 30                              >300    0-14 days
+Carbon Dioxide, Total       mmol/L  < 1.0                              >8     Any Age
+                                    < 1.0                              ----   Any Age
+Glucose                     mg/dL   < 2.8                             >6.2    Any Age
+                                    < 2.8                              >8     0-14 days
+Glucose, Newborn            mg/dL   < 120                             >160    Any Age
+
+Magnesium                   mg/dL
+
+Phosphate                   mg/dL
+
+Potassium                   mmol/L
+
+Potassium Newborn           mmol/L
+
+Sodium                      mmol/L
+
+Clinical Chemistry Toxicology/TDM (Serum)
+
+            Analyte         Unit           Low    High                       Age Range
+                                                 > 150.0                      Any Age
+Acetaminophen               ug/mL          ----  > 80.0                       Any Age
+                                                                              Any Age
+Amikacin, Peak & Random     ug/mL          ----    >10                        Any Age
+                                                 > 20.0                       Any Age
+Amikacin, Trough            ug/mL                 > 3.0                       Any Age
+                                                 > 20.0                         >18y
+Carbamazepine               ug/mL          ----                                 0-18y
+                                                    >5                        Any Age
+Digoxin                     ng/mL          ----     >3                        Any Age
+                                                  > 9.0                       Any Age
+Gentamicin, Peak & Random   ug/mL          ----  > 2.00                       Any Age
+                                                 > 60.0                       Any Age
+Gentamicin, Trough          ug/mL          ----  > 40.0                       Any Age
+                                                 > 30.0                       Any Age
+                                           ----  > 25.0                         >18y
+                                                 > 20.0                         0-18y
+Lidocaine                   ug/mL          ----     >5                        Any Age
+                                                    >3                        Any Age
+Lithium                     mmol/L         ----   > 200                       Any Age
+                                                 > 40.0
+Phenobarbital               ug/mL          ----    >20
+
+Phenytoin                   ug/mL          ----
+
+Salicylate                  mg/dL          ----
+
+Theophylline                ug/mL          ----
+
+Tobramycin, Peak & Random   ug/mL          ----
+
+Tobramycin, Trough          ug/mL
+
+Valproic Acid               ug/mL          ----
+
+Vancomycin, Peak &Random    ug/mL          ----
+
+Vancomycin, Trough          ug/mL
+
+                                                                             Page 1 of 3
+The University of Chicago Medical Center Laboratories
+             APPENDIX 1 - Critical Value List
+
+Coagulation            Unit   Low                      High               Age Range
+                        sec
+             Analyte    %               > 100120.0                                Any Age
+Activated PTT
+ADAMTS-13             mg/dL   < 10                                                Any age
+PT INR
+Fibrinogen                                             > 4.0                      Any Age
+
+Hematology                    < 80                     < 80                       Any Age
+
+Inpatients & ED: The laboratory calls critical values the first time the limit is exceeded. Whenever
+a value falls outside the critical range and then becomes critical again, a new call is made.
+
+Outpatients: The laboratory calls critical values the first time the limit is exceeded. A new call is
+made every 48 hours if the value for the test is critical.
+
+All patients: If the HCT is less than 15% and/or platelets are less than 10,000/uL the results will
+be called each time the value of the test is critical.
+
+             Analyte  Unit    Low                      High
+Hematocrit
+Hemoglobin            %       < 20                     > 60
+Platelet Count
+White Cell Count      gm/dL   < 6.0                    > 20.0
+
+White Cell Diff       per uL  < 30,000  > 1,000,000
+
+Blast Cells           per uL  < 1,000   > 30,000
+
+                      < 500 Neutrophils /uL when the WBC is greater than
+                      1000 /uL.
+
+                      > 4% from outpatient/ emergency room patients
+
+When smears indicate that a platelet count is markedly decreased (less than 30,000/uL), but no
+platelet count was ordered, a platelet count is automatically performed and called as a Critical
+Value if less than 30,000/uL and the inpatient's previous platelet count was not critical or the
+outpatient's previous platelet count was not critical or not called in the past 48 hours.
+
+Intracellular organisms and intracellular and extracellular parasites in: blood, CSF, pericardial fluid,
+peritoneal fluid (paracentesis), pleural fluid, synovial fluid; intracellular and extracellular yeast and
+pneumocystis in BAL.
+
+                                                                     Page 2 of 3
+The University of Chicago Medical Center Laboratories
+             APPENDIX 1 - Critical Value List
+
+Microbiology
+
+Blood: Initial presence of organisms by microscopic examination or growth is a critical value. No
+notification of additional positive cultures will be made within 3 days of the first notification if
+gram stain morphology or organism identification remains the same.
+
+Bone Marrow: Positive for organisms by microscopic examination or culture growth.
+
+CSF: Positive for organisms by microscopic examination or culture growth, or detection of
+organism-specific nucleic acid (PCR) in CSF. First-time positive Cryptococcus Latex
+Agglutination.
+
+Rapid Response Laboratory
+
+Blood Gas - Whole Blood    Unit  Low    High             Age Range
+               Analyte       -   <7.20  >7.60              Any age
+                                 <7.00
+pH                           -    <20      -           Cord blood only
+                          mmHg    <40    >70               Any age
+pH Cord Gas               mmHg    <40                      Any age
+PCO2                      mg/dL  <120      -               Any age
+PO2 (arterial)            mEq/L   <2.8  >500               Any age
+Glucose                   mEq/L         >160               Any age
+Sodium (Na)                g/dL    <6    >6.2              Any age
+Potassium (K)                                              Any age
+tHb (total Hemoglobin)      %              -               Any age
+COHb (Carboxyhemoglobin)    %            >20
+MetHb (Methemoglobin)                    >10
+
+                                                       Page 3 of 3
+
