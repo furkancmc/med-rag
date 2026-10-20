@@ -26,6 +26,11 @@ eklenebilen tek bir arayüzde.
   </tr>
 </table>
 
+<p align="center"><img src="docs/screens/demo/medrag-demo.gif" alt="medrag demo: sohbet, acil durum, belirti, tahlil, fotoğraftan okuma, ilaç kutusu" width="320"></p>
+
+<p align="center"><sub>Sohbet → acil durum uyarısı → belirti değerlendirme → tahlil yorumu → tahlil fotoğrafından okuma → ilaç kutusu tanıma.<br>
+Sohbet cevapları örnek servisten; belirti, tahlil ve fotoğraf okuma gerçek API'den gelir (bekleme süreleri kısaltıldı). Betik: <code>scripts/demo_gif.py</code></sub></p>
+
 > Görüntüler gerçek arayüzden, ama sahte servisle alındı (`scripts/dev_server.py`); arayüzü gösterir, modelin gerçek
 > cevap kalitesini göstermez.
 
@@ -93,12 +98,42 @@ karşılaştırıldı ama bir hekim onaylamadı), gerçek telefon fotoğrafı ve
 - **Gizlilik:** Hesap yok. Görseller ve sesler yalnızca istek süresince bellekte işlenir, saklanmaz. Sohbet geçmişi
   yalnızca kullanıcının tarayıcısında durur. Geri bildirim IP tutulmadan kaydedilir.
 
+**Diğer sayfalar (telefon):**
+
 <table>
   <tr>
-    <td align="center"><img src="docs/screens/ui-pc/sohbet-cevap-pc-dark.png" width="420"><br><sub>Masaüstü: kaynaklı cevap (koyu)</sub></td>
-    <td align="center"><img src="docs/screens/ui-pc/tahlil-2-sonuc-pc-dark.png" width="420"><br><sub>Masaüstü: tahlil sonucu (koyu)</sub></td>
+    <td align="center"><img src="docs/screens/ui/belirti-3-sonuc.png" width="200"><br><sub>Belirti sonucu (örnek yanıt)</sub></td>
+    <td align="center"><img src="docs/screens/ui/tahlil-2-sonuc.png" width="200"><br><sub>Tahlil sonucu (kural tabanlı)</sub></td>
+    <td align="center"><img src="docs/screens/ui/tahlil-3-fotograf.png" width="200"><br><sub>Fotoğraftan okuma sekmesi</sub></td>
+    <td align="center"><img src="docs/screens/ui/hakkinda.png" width="200"><br><sub>Hakkında</sub></td>
   </tr>
 </table>
+
+**Masaüstü (≥ 1024 px):** aynı sayfalar, alt gezinme yerine sol kenar çubuğu.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ui-pc/sohbet-karsilama-pc-light.png" width="420"><br><sub>Sohbet, karşılama (açık)</sub></td>
+    <td align="center"><img src="docs/screens/ui-pc/sohbet-cevap-pc-dark.png" width="420"><br><sub>Kaynaklı cevap (koyu)</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ui-pc/belirti-3-sonuc-pc-light.png" width="420"><br><sub>Belirti sonucu (örnek yanıt)</sub></td>
+    <td align="center"><img src="docs/screens/ui-pc/tahlil-2-sonuc-pc-dark.png" width="420"><br><sub>Tahlil: giriş / sonuç (koyu)</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="docs/screens/ui-pc/hakkinda-pc-light.png" width="420"><br><sub>Hakkında</sub></td>
+  </tr>
+</table>
+
+<details>
+<summary>İlk sürümden, gerçek API ile alınmış görüntüler (normal soru, acil durum, ilaç dozu sorusu)</summary>
+
+| Normal soru | Acil durum | İlaç dozu sorusu |
+|---|---|---|
+| <img src="docs/screens/normal-light.png" width="240"> | <img src="docs/screens/acil-light.png" width="240"> | <img src="docs/screens/doz-light.png" width="240"> |
+
+Koyu tema: `docs/screens/*-dark.png`.
+</details>
 
 ---
 
@@ -209,6 +244,51 @@ Ayrıntılı tablolar: [docs/teknik-detaylar.md](docs/teknik-detaylar.md#7-arama
 - **İlaç kutusu:** ad, etken madde, güç ve form okunur; **doz önerilmez.**
 - Temiz ve hafif/orta bozulmuş görsellerde değerler neredeyse hatasız okunuyor; çok bozuk fotoğrafta doğruluk
   yarıya düşüyor, bu yüzden "net bir fotoğraf deneyin" uyarısı veriliyor.
+
+#### OCR örnekleri: normal ve bozulmuş görseller
+
+Okumayı, telefon fotoğrafını taklit eden **bozulmuş görsellerle** ölçtük (`scripts/ocr_set.py` üretir,
+`scripts/ocr_eval.py` ölçer; sonuçlar: [`eval/ocr_real_results.md`](eval/ocr_real_results.md)). Hafif düzeyde 1, orta
+düzeyde 2, ağır düzeyde 4 bozulma birlikte uygulanır: perspektif eğimi, gölge, flaş parlaması, buruşma, bulanıklık,
+düşük ışık, kenar kırpma ve JPEG sıkıştırma. Görseller sentetiktir (Pillow ile çizildi); gerçek bir kişiye ya da
+markaya ait veri içermez.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-normal.jpg" width="150"><br><sub>Tablo raporu: normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-tablo-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-normal.jpg" width="150"><br><sub>e-Nabız tarzı rapor: normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/rapor-enabiz-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-normal.jpg" width="150"><br><sub>İlaç kutusu (Parol): normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-parol-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-normal.jpg" width="150"><br><sub>İlaç kutusu (Nurofen): normal</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-hafif.jpg" width="150"><br><sub>hafif</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-orta.jpg" width="150"><br><sub>orta</sub></td>
+    <td align="center"><img src="docs/screens/ocr/kutu-nurofen-agir.jpg" width="150"><br><sub>ağır</sub></td>
+  </tr>
+</table>
+
+Ölçüm özeti (48 rapor, 45 kutu):
+
+| Görsel | Hafif / orta bozulma | Ağır bozulma |
+|---|---|---|
+| Tahlil değerleri (4 model) | %98-100 doğru | %41-58 doğru; satırlar kaçıyor, bazı modeller olmayan satır uyduruyor |
+| İlaç kutusu (`gemma-4-31b`) | marka %100, etken madde %100, güç %80-100 | marka %93, etken madde %80, güç %87 |
+
+Bu yüzden arayüz okunan her satırı kullanıcı onayına sunar. Ölçüm sentetik görsellerle yapıldı; gerçek telefon
+fotoğrafında doğruluk bunların altında olabilir.
 
 ---
 
