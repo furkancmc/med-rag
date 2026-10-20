@@ -86,6 +86,7 @@ gerçek tarayıcıyla çalıştırıldı. **Testle** = yalnızca sahte servisler
 | Bilgi tabanı (33.573 parça) | Doğrulandı | Tüm kaynaklar yerel BGE-M3 ile indekslendi (RTX 4060'ta ~6 dk); 500 soruda recall@5 0,78, 677 soruluk belge düzeyi sette doc@5 0,91 |
 
 **Yenilenenler (20.10.2026):** güvenlik senaryoları gerçek vektör aramayla yeni kurallarla koşuldu (60/60, yanlış alarm 0/40); belirti senaryoları 19/19 uygun (aşırı triyaj 0, aşağı triyaj 0).
+**Acil tespiti ölçümü (20.10.2026):** kural tabanlı `check_emergency` DeepSeek'in ürettiği 541 Türkçe mesajla ölçüldü (`scripts/acil_olcum.py`, `eval/acil_tespit_results.md`). Kural genişletmeden önce kaçıran oran ~%29'du; genişletmeden sonra ayarlarken kullanılan kümelerde %98-100, ayarlamadan sonra üretilen bağımsız kümede (set3) %86 yakalama, acil olmayan 60 mesajda 1 yanlış alarm. Kendine zarar kategorisi dolaylı ifadelerde en zayıf halka; orada LLM sınıflandırıcısı ikinci katman olarak kalır. Genel bilgi/önleme soruları ("... nasıl önlenir") kişisel aciliyet işareti yoksa acil sayılmaz; kendine zarar her zaman acildir.
 **Ertelenenler:** hekim incelemesi (`docs/hekim-inceleme-paketi.md`), gerçek telefon fotoğrafı ve gerçek ses denemesi. Ayrıntı: [Bilinen sınırlar](#20-bilinen-sınırlar).
 
 ---

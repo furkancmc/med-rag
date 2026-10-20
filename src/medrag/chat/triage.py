@@ -11,7 +11,7 @@ RULES: list[tuple[str, str]] = [
     ("solunum sıkıntısı", r"nefes\w* .{0,15}(alam|daral|kesil)|soluk\w* .{0,15}(alam|kesil)|nefes darlig|nefes alm\w*(iyo|iyor)|nefes almakta (cok )?zorlan|dudag\w* (mor|mosmor)|bogaz\w* kapan|hirilt|bogul"),
     ("bilinç kaybı", (r"bayil|baygin|bilinc\w* .{0,15}(kayb|kapan|bulan|yerinde degil)|kendinde degil|uyandiram"
         r"|(uyanmiyor|uyanmadi|cevap vermiyor|tepki (yok|vermiyor))|yere yigil|yigilm")),
-    ("şiddetli kanama", (r"(durmayan|dinmeyen|cok fazla|siddetli|asiri) .{0,15}kanama|kan kus|(disk|kusm|kusuk|kusar)\w* .{0,25}kan|kan icinde|agzindan kan|kan (akiyor|akmaya)|kan gelmeye|ped yetmiyor|(cok|asiri) fazla kan|kanli kus|kanama\w* .{0,15}(durmuyor|dinmiyor)"
+    ("şiddetli kanama", (r"(durmayan|dinmeyen|cok fazla|siddetli|asiri) .{0,15}kanama|kan kus|(kusm|kusuk|kusar)\w* .{0,25}kan|kan icinde|agzindan kan|kan (akiyor|akmaya)|kan gelmeye|ped yetmiyor|(cok|asiri) fazla kan|kanli kus|kanama\w* .{0,15}(durmuyor|dinmiyor)"
         r"|cok (fazla )?kan (kayb|gid)|kan\w* .{0,30}(durmad|durmuy|durmu |dinmed|dinmiy)|(durmad|durmuy)\w* .{0,20}kan")),
     ("zehirlenme / aşırı doz", (r"zehirlen|asiri doz|fazla (ilac|hap) (ic|al)|cok (ilac|hap) (ic|al)|(ilac|hap)\w* .{0,20}(fazla|cok) (ic|al)"
         r"|(camasir suyu|tiner|antifriz|bocek ilac|fare zehir|deterjan|temizleyici|lavabo acici|tarim ilac|gaz yag)\w*[^.]{0,30}\b(ic(ti|mis|ip)|yut\w*|yem\w*|yedi)"

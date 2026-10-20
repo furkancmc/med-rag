@@ -53,3 +53,7 @@ def test_bilgi_kalibi_kisisel_aciliyette_bastirmaz():
 def test_cocuk_ilac_yuttu_acil_ama_yutma_guclugu_degil():
     assert check_emergency("3 yaşındaki oğlum az önce annemin tansiyon haplarını yuttu").emergency
     assert not check_emergency("hapları yutmakta zorlanıyorum").emergency
+
+
+def test_diskida_kan_tek_basina_acil_degil():
+    assert not check_emergency("Dışkıda kan").emergency
