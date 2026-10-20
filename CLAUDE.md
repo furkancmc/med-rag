@@ -21,4 +21,4 @@ Türkçe sağlık bilgi asistanı: açık tıbbi kaynaklar üzerinde RAG, kaynak
 - Embedding varsayılanı yerel BGE-M3, rerank kapalı (GPU'da pool 10 / 600 karakter faydalı, CPU'da yavaş); ücretli 8b modelleri çağırma.
 - Evren API: aynı anda çok istek 429 verir (`glm-5.3` özellikle); toplu işlerde `deepseek-v4.1-flash`, düşük eşzamanlılık. Testler için `PYTHONPATH=src` gerekebilir.
 - Commit mesajları Türkçe, kısa; Claude eş-yazar/trailer satırı ekleme.
-- Büyük dosyalar (`README.md` ~60 KB, `eval/safety_results.md`) için tamamını okuma; `grep` ile ilgili bölümü bul.
+- Büyük dosyalar (`docs/teknik-detaylar.md` ~60 KB, `eval/safety_results.md`) için tamamını okuma; `grep` ile ilgili bölümü bul.
