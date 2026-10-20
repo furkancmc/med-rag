@@ -105,9 +105,10 @@ kaynağın kullanım sınırlarına saygılı eşzamanlılık ve 429'da geri çe
   Reranker varsayılan kapalı (GPU'da havuz 10 / 600 karakter faydalı, CPU'da yavaş).
 - **Bekleyen işler (sırayla):**
   1. Hekim ya da klinik biyokimya uzmanı incelemesi: `labs/reference.py` ve `assess/rules.py`. Web kaynaklı doğrulama (`docs/tibbi-inceleme.md`) bunun yerine geçmez.
-  2. (TAMAM 20.10.2026) Güvenlik 60/60, belirti 19/19; sonuç dosyaları yenilendi. Çoklu sorgu ölçüldü (doc@1 +9,5 puan, +4,4 sn; kapalı kaldı). OCR ön işleme kazanç vermedi (kapalı). `docs/hekim-inceleme-paketi.md` hekime verilecek liste, `docs/veri-depolama.md` data/raw için Release asset önerisi (uygulanmadı).
+  2. (TAMAM 20.10.2026) Güvenlik 60/60, belirti 19/19; sonuç dosyaları yenilendi. Çoklu sorgu ölçüldü (doc@1 +9,5 puan, +4,4 sn; kapalı kaldı). OCR ön işleme kazanç vermedi (kapalı). Acil kuralları 541 sentetik mesajla ölçüldü ve genişletildi (`eval/acil_tespit_results.md`: bağımsız kümede %86 yakalama, yanlış alarm 1/60; dolaylı kendine zarar zayıf halka). `docs/hekim-inceleme-paketi.md` hekime verilecek liste, `docs/veri-depolama.md` data/raw için Release asset önerisi (uygulanmadı).
   3. OCR'ı gerçek telefon fotoğraflarıyla ölçmek; ağır bozulmada doğruluk %41-58 (perspektif düzeltme/ön işleme denenebilir).
   4. Ses tanıma (`qwen3-asr-1.7b`) gerçek sesle denemesi: `Platform` workflow'u.
   5. Çoklu sorgu ölçümü (kod hazır, kapalı); haftalık `data/raw` commit'leri `.git`'i büyütüyor (Git LFS ya da release asset düşünülebilir).
 - Gerçek API testleri yerelde (anahtar `.env`'de, gitignore'da) ya da Actions'ta (`EVREN_API_KEY` secret) çalışır. Evren API aynı anda çok istekte 429 verir.
 - Commit mesajları kısa, sade Türkçe; her güncelleme README'ye işlenir. Anahtarlar asla repoya yazılmaz.
+- Açık kalanlar: hekim incelemesi, gerçek telefon fotoğrafı/ses denemesi, data/raw için Release asset geçişi (`docs/veri-depolama.md`), uzak adres (`git remote set-url origin https://github.com/furkancmc/med-rag.git`, kullanıcı onayı bekliyor), eski `.claude/worktrees/agent-*` klasörlerinin elle temizliği.
